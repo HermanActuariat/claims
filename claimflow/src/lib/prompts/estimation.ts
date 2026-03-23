@@ -1,7 +1,7 @@
 /**
  * Prompt système — Estimation d'indemnisation
  * Agent : IA Engineer / estimateIndemnization()
- * Modèle : claude-sonnet-4-6
+ * Modèle : déterminé par le provider actif (via callWithFallback)
  */
 
 export const BAREMES_2025_2026 = `## Barèmes d'indemnisation de référence — France 2025-2026

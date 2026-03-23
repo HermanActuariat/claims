@@ -9,6 +9,14 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
   }
 
-  const stats = await getProviderStats();
-  return NextResponse.json({ data: stats });
+  try {
+    const stats = await getProviderStats();
+    return NextResponse.json({ data: stats });
+  } catch (err) {
+    console.error("[admin/ai-providers/stats/GET]", err);
+    return NextResponse.json(
+      { error: "Erreur lors de la récupération des statistiques", details: String(err) },
+      { status: 500 }
+    );
+  }
 }

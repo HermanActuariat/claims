@@ -7,6 +7,7 @@ import Groq from "groq-sdk";
 import { prisma } from "@/lib/prisma";
 import { OcrResult } from "@/types";
 import { OCR_SYSTEM_PROMPT, ocrTextUserPrompt } from "@/lib/prompts/ocr";
+import { parseAIResponse } from "@/lib/ai-utils";
 
 let _client: Groq | null = null;
 function getClient(): Groq {
@@ -18,29 +19,12 @@ function getClient(): Groq {
 
 const MODEL = "llama-3.3-70b-versatile";
 
-function parseJSON<T>(text: string): T {
-  // 1. Code block ```json ... ```
-  const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (codeBlock) return JSON.parse(codeBlock[1].trim()) as T;
-
-  // 2. Raw JSON direct
-  const trimmed = text.trim();
-  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-    return JSON.parse(trimmed) as T;
-  }
-
-  // 3. JSON embedded in prose — extract first { ... } block
-  const firstBrace = text.indexOf("{");
-  const lastBrace = text.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    return JSON.parse(text.slice(firstBrace, lastBrace + 1)) as T;
-  }
-
-  throw new Error(`Réponse IA non parseable : ${text.slice(0, 200)}`);
-}
-
 function getText(response: Groq.Chat.ChatCompletion): string {
-  return response.choices[0]?.message?.content ?? "{}";
+  const content = response.choices[0]?.message?.content;
+  if (!content || content.trim() === "") {
+    throw new Error("AI returned empty response — possible rate limit or content filter");
+  }
+  return content;
 }
 
 /**
@@ -77,7 +61,7 @@ export async function extractTextFromImage(documentId: string): Promise<{
 
   const durationMs = Date.now() - start;
   const tokensUsed = response.usage?.total_tokens ?? 0;
-  const result = parseJSON<OcrResult>(getText(response));
+  const result = parseAIResponse<OcrResult>(getText(response));
 
   // Ensure result has required shape with defaults
   const ocrResult: OcrResult = {

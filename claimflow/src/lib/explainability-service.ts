@@ -284,8 +284,8 @@ export async function resolveContestation(
             }),
           },
         });
-      } catch {
-        // Non-blocking — do not fail the resolution if flag update fails
+      } catch (err) {
+        console.error("[explainability-service] Failed to flag analysis for review after accepted contestation:", err);
       }
     })();
   }

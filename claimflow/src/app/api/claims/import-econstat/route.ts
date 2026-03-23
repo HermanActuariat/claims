@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
         vehiculeA: econstatData.vehiculeA,
         vehiculeB: econstatData.vehiculeB,
         circonstancesCount: econstatData.circonstances.length,
-        degatsCount: econstatData.degats,
+        degatsCount: econstatData.degats.length,
       },
       claimId,
       userId: session.user.id,

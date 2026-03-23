@@ -33,12 +33,17 @@ vi.mock("@/lib/email-service", () => ({
   sendClaimStatusEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/lib/rules-engine", () => ({
+  executeRulesForClaim: vi.fn().mockResolvedValue([]),
+}));
+
 import { PATCH } from "@/app/api/claims/[id]/status/route";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { isValidTransition } from "@/lib/claim-service";
 import { createNotification } from "@/lib/notification-service";
 import { sendClaimStatusEmail } from "@/lib/email-service";
+import { executeRulesForClaim } from "@/lib/rules-engine";
 
 type AuthReturn = ReturnType<typeof auth> extends Promise<infer T> ? T : never;
 type ClaimReturn = ReturnType<typeof prisma.claim.findUnique> extends Promise<infer T> ? T : never;
@@ -204,5 +209,16 @@ describe("PATCH /api/claims/[id]/status", () => {
     } as unknown as ClaimUpdateReturn);
     await PATCH(makeRequest({ status: "UNDER_REVIEW" }), makeParams("claim-1"));
     expect(createNotification).not.toHaveBeenCalled();
+  });
+
+  it("calls executeRulesForClaim after status change", async () => {
+    await PATCH(makeRequest({ status: "UNDER_REVIEW" }), makeParams("claim-1"));
+    expect(executeRulesForClaim).toHaveBeenCalledWith("claim-1", "user-1");
+  });
+
+  it("returns 200 even when rules engine fails", async () => {
+    vi.mocked(executeRulesForClaim).mockRejectedValue(new Error("rules failed"));
+    const res = await PATCH(makeRequest({ status: "UNDER_REVIEW" }), makeParams("claim-1"));
+    expect(res.status).toBe(200);
   });
 });

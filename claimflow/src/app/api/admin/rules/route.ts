@@ -76,37 +76,45 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "L'action AUTO_REJECT n'est pas autorisée" }, { status: 422 });
   }
 
-  const rule = await prisma.automationRule.create({
-    data: {
-      name,
-      description: description ?? null,
-      active: active ?? true,
-      priority: priority ?? 0,
-      conditions: JSON.stringify(conditions),
-      action,
-      actionParams: actionParams ? JSON.stringify(actionParams) : null,
-      createdBy: session.user.id,
-    },
-  });
-
-  await createAuditLog({
-    action: "RULE_CREATED",
-    entityType: "AUTOMATION_RULE",
-    entityId: rule.id,
-    after: { name, action, priority, active },
-    userId: session.user.id,
-  });
-
-  return NextResponse.json(
-    {
+  try {
+    const rule = await prisma.automationRule.create({
       data: {
-        ...rule,
-        conditions,
-        actionParams: actionParams ?? null,
-        createdAt: rule.createdAt.toISOString(),
-        updatedAt: rule.updatedAt.toISOString(),
+        name,
+        description: description ?? null,
+        active: active ?? true,
+        priority: priority ?? 0,
+        conditions: JSON.stringify(conditions),
+        action,
+        actionParams: actionParams ? JSON.stringify(actionParams) : null,
+        createdBy: session.user.id,
       },
-    },
-    { status: 201 }
-  );
+    });
+
+    await createAuditLog({
+      action: "RULE_CREATED",
+      entityType: "AUTOMATION_RULE",
+      entityId: rule.id,
+      after: { name, action, priority, active },
+      userId: session.user.id,
+    });
+
+    return NextResponse.json(
+      {
+        data: {
+          ...rule,
+          conditions,
+          actionParams: actionParams ?? null,
+          createdAt: rule.createdAt.toISOString(),
+          updatedAt: rule.updatedAt.toISOString(),
+        },
+      },
+      { status: 201 }
+    );
+  } catch (err) {
+    console.error("[admin/rules/POST]", err);
+    return NextResponse.json(
+      { error: "Erreur lors de la création de la règle", details: String(err) },
+      { status: 500 }
+    );
+  }
 }

@@ -246,7 +246,8 @@ export async function executeRulesForClaim(
     let conditions: RuleCondition[] = [];
     try {
       conditions = JSON.parse(rule.conditions) as RuleCondition[];
-    } catch {
+    } catch (err) {
+      console.warn(`[rules-engine] Failed to parse conditions for rule ${rule.id} (${rule.name}):`, err);
       conditions = [];
     }
 
@@ -295,7 +296,8 @@ export async function executeRulesForClaim(
         if (rule.actionParams) {
           try {
             actionParams = JSON.parse(rule.actionParams) as Record<string, unknown>;
-          } catch {
+          } catch (err) {
+            console.warn(`[rules-engine] Failed to parse actionParams for rule ${rule.id} (${rule.name}):`, err);
             actionParams = null;
           }
         }
@@ -378,7 +380,8 @@ export async function simulateRulesForClaim(claimId: string): Promise<RuleSimula
     let conditions: RuleCondition[] = [];
     try {
       conditions = JSON.parse(rule.conditions) as RuleCondition[];
-    } catch {
+    } catch (err) {
+      console.warn(`[rules-engine] Failed to parse conditions for rule ${rule.id} (${rule.name}):`, err);
       conditions = [];
     }
 

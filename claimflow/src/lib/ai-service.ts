@@ -23,27 +23,7 @@ import {
 } from "@/lib/prompts/letter";
 import { getNetworkScoreForClaim } from "@/lib/fraud-network-service";
 import { callWithFallback } from "@/lib/ai-provider";
-
-function parseJSON<T>(text: string): T {
-  // 1. Code block ```json ... ```
-  const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (codeBlock) return JSON.parse(codeBlock[1].trim()) as T;
-
-  // 2. Raw JSON direct
-  const trimmed = text.trim();
-  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-    return JSON.parse(trimmed) as T;
-  }
-
-  // 3. JSON embedded in prose — extract first { ... } block
-  const firstBrace = text.indexOf("{");
-  const lastBrace = text.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    return JSON.parse(text.slice(firstBrace, lastBrace + 1)) as T;
-  }
-
-  throw new Error(`Réponse IA non parseable : ${text.slice(0, 200)}`);
-}
+import { parseAIResponse } from "@/lib/ai-utils";
 
 // 1. Information Extraction
 export async function extractClaimInfo(
@@ -56,7 +36,7 @@ export async function extractClaimInfo(
     maxTokens: 2048,
   });
 
-  const result = parseJSON<ExtractionResult>(text);
+  const result = parseAIResponse<ExtractionResult>(text);
   return { result, tokensUsed, durationMs, provider };
 }
 
@@ -83,7 +63,7 @@ export async function analyzeFraud(
     maxTokens: 1024,
   });
 
-  const result = parseJSON<FraudAnalysisResult>(text);
+  const result = parseAIResponse<FraudAnalysisResult>(text);
   return { result, tokensUsed, durationMs, provider };
 }
 
@@ -97,7 +77,7 @@ export async function estimateIndemnization(
     maxTokens: 1024,
   });
 
-  const result = parseJSON<EstimationResult>(text);
+  const result = parseAIResponse<EstimationResult>(text);
   return { result, tokensUsed, durationMs, provider };
 }
 
@@ -112,6 +92,6 @@ export async function generateLetter(
     maxTokens: 1024,
   });
 
-  const result = parseJSON<LetterResult>(text);
+  const result = parseAIResponse<LetterResult>(text);
   return { result, tokensUsed, durationMs, provider };
 }

@@ -27,61 +27,69 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "L'action AUTO_REJECT n'est pas autorisée" }, { status: 422 });
   }
 
-  const updateData: Record<string, unknown> = {};
-  if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
-  if (parsed.data.description !== undefined) updateData.description = parsed.data.description;
-  if (parsed.data.active !== undefined) updateData.active = parsed.data.active;
-  if (parsed.data.priority !== undefined) updateData.priority = parsed.data.priority;
-  if (parsed.data.conditions !== undefined) updateData.conditions = JSON.stringify(parsed.data.conditions);
-  if (parsed.data.action !== undefined) updateData.action = parsed.data.action;
-  if (parsed.data.actionParams !== undefined) {
-    updateData.actionParams = parsed.data.actionParams ? JSON.stringify(parsed.data.actionParams) : null;
-  }
-
-  const updated = await prisma.automationRule.update({
-    where: { id },
-    data: updateData,
-  });
-
-  await createAuditLog({
-    action: "RULE_UPDATED",
-    entityType: "AUTOMATION_RULE",
-    entityId: id,
-    before: {
-      name: existing.name,
-      action: existing.action,
-      active: existing.active,
-      priority: existing.priority,
-    },
-    after: updateData,
-    userId: session.user.id,
-  });
-
-  let conditions: RuleCondition[] = [];
   try {
-    conditions = JSON.parse(updated.conditions) as RuleCondition[];
-  } catch {
-    conditions = [];
-  }
-
-  let actionParams: Record<string, unknown> | null = null;
-  if (updated.actionParams) {
-    try {
-      actionParams = JSON.parse(updated.actionParams) as Record<string, unknown>;
-    } catch {
-      actionParams = null;
+    const updateData: Record<string, unknown> = {};
+    if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
+    if (parsed.data.description !== undefined) updateData.description = parsed.data.description;
+    if (parsed.data.active !== undefined) updateData.active = parsed.data.active;
+    if (parsed.data.priority !== undefined) updateData.priority = parsed.data.priority;
+    if (parsed.data.conditions !== undefined) updateData.conditions = JSON.stringify(parsed.data.conditions);
+    if (parsed.data.action !== undefined) updateData.action = parsed.data.action;
+    if (parsed.data.actionParams !== undefined) {
+      updateData.actionParams = parsed.data.actionParams ? JSON.stringify(parsed.data.actionParams) : null;
     }
-  }
 
-  return NextResponse.json({
-    data: {
-      ...updated,
-      conditions,
-      actionParams,
-      createdAt: updated.createdAt.toISOString(),
-      updatedAt: updated.updatedAt.toISOString(),
-    },
-  });
+    const updated = await prisma.automationRule.update({
+      where: { id },
+      data: updateData,
+    });
+
+    await createAuditLog({
+      action: "RULE_UPDATED",
+      entityType: "AUTOMATION_RULE",
+      entityId: id,
+      before: {
+        name: existing.name,
+        action: existing.action,
+        active: existing.active,
+        priority: existing.priority,
+      },
+      after: updateData,
+      userId: session.user.id,
+    });
+
+    let conditions: RuleCondition[] = [];
+    try {
+      conditions = JSON.parse(updated.conditions) as RuleCondition[];
+    } catch {
+      conditions = [];
+    }
+
+    let actionParams: Record<string, unknown> | null = null;
+    if (updated.actionParams) {
+      try {
+        actionParams = JSON.parse(updated.actionParams) as Record<string, unknown>;
+      } catch {
+        actionParams = null;
+      }
+    }
+
+    return NextResponse.json({
+      data: {
+        ...updated,
+        conditions,
+        actionParams,
+        createdAt: updated.createdAt.toISOString(),
+        updatedAt: updated.updatedAt.toISOString(),
+      },
+    });
+  } catch (err) {
+    console.error("[admin/rules/PATCH]", err);
+    return NextResponse.json(
+      { error: "Erreur lors de la mise à jour de la règle", details: String(err) },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -97,15 +105,23 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const existing = await prisma.automationRule.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Règle introuvable" }, { status: 404 });
 
-  await prisma.automationRule.delete({ where: { id } });
+  try {
+    await prisma.automationRule.delete({ where: { id } });
 
-  await createAuditLog({
-    action: "RULE_DELETED",
-    entityType: "AUTOMATION_RULE",
-    entityId: id,
-    before: { name: existing.name, action: existing.action, active: existing.active },
-    userId: session.user.id,
-  });
+    await createAuditLog({
+      action: "RULE_DELETED",
+      entityType: "AUTOMATION_RULE",
+      entityId: id,
+      before: { name: existing.name, action: existing.action, active: existing.active },
+      userId: session.user.id,
+    });
 
-  return NextResponse.json({ data: { deleted: true, id } });
+    return NextResponse.json({ data: { deleted: true, id } });
+  } catch (err) {
+    console.error("[admin/rules/DELETE]", err);
+    return NextResponse.json(
+      { error: "Erreur lors de la suppression de la règle", details: String(err) },
+      { status: 500 }
+    );
+  }
 }

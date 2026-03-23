@@ -44,7 +44,14 @@ export async function GET(req: NextRequest) {
     claimId: log.claimId,
     action: log.action,
     success: log.success,
-    resultData: log.resultData ? (JSON.parse(log.resultData) as Record<string, unknown>) : null,
+    resultData: (() => {
+      if (!log.resultData) return null;
+      try {
+        return JSON.parse(log.resultData) as Record<string, unknown>;
+      } catch {
+        return null;
+      }
+    })(),
     errorMessage: log.errorMessage,
     dryRun: log.dryRun,
     executedAt: log.executedAt.toISOString(),

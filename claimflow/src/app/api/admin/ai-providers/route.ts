@@ -49,30 +49,38 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Provider introuvable" }, { status: 404 });
   }
 
-  const updated = await prisma.aIProviderConfig.update({
-    where: { provider },
-    data: updateData,
-  });
+  try {
+    const updated = await prisma.aIProviderConfig.update({
+      where: { provider },
+      data: updateData,
+    });
 
-  await createAuditLog({
-    action: "PROVIDER_CONFIG_UPDATED",
-    entityType: "AI_PROVIDER",
-    entityId: updated.id,
-    before: {
-      active: existing.active,
-      priority: existing.priority,
-      defaultModel: existing.defaultModel,
-      maxTokens: existing.maxTokens,
-    },
-    after: {
-      active: updated.active,
-      priority: updated.priority,
-      defaultModel: updated.defaultModel,
-      maxTokens: updated.maxTokens,
-    },
-    metadata: { provider },
-    userId: session.user.id,
-  });
+    await createAuditLog({
+      action: "PROVIDER_CONFIG_UPDATED",
+      entityType: "AI_PROVIDER",
+      entityId: updated.id,
+      before: {
+        active: existing.active,
+        priority: existing.priority,
+        defaultModel: existing.defaultModel,
+        maxTokens: existing.maxTokens,
+      },
+      after: {
+        active: updated.active,
+        priority: updated.priority,
+        defaultModel: updated.defaultModel,
+        maxTokens: updated.maxTokens,
+      },
+      metadata: { provider },
+      userId: session.user.id,
+    });
 
-  return NextResponse.json({ data: updated });
+    return NextResponse.json({ data: updated });
+  } catch (err) {
+    console.error("[admin/ai-providers/PATCH]", err);
+    return NextResponse.json(
+      { error: "Erreur lors de la mise à jour du provider", details: String(err) },
+      { status: 500 }
+    );
+  }
 }

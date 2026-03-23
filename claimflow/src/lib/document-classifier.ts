@@ -10,6 +10,7 @@ import {
   CLASSIFY_DOCUMENT_SYSTEM_PROMPT,
   classifyDocumentUserPrompt,
 } from "@/lib/prompts/classify-document";
+import { parseAIResponse } from "@/lib/ai-utils";
 
 let _client: Groq | null = null;
 function getClient(): Groq {
@@ -21,26 +22,12 @@ function getClient(): Groq {
 
 const MODEL = "llama-3.3-70b-versatile";
 
-function parseJSON<T>(text: string): T {
-  const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (codeBlock) return JSON.parse(codeBlock[1].trim()) as T;
-
-  const trimmed = text.trim();
-  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-    return JSON.parse(trimmed) as T;
-  }
-
-  const firstBrace = text.indexOf("{");
-  const lastBrace = text.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    return JSON.parse(text.slice(firstBrace, lastBrace + 1)) as T;
-  }
-
-  throw new Error(`Réponse IA non parseable : ${text.slice(0, 200)}`);
-}
-
 function getText(response: Groq.Chat.ChatCompletion): string {
-  return response.choices[0]?.message?.content ?? "{}";
+  const content = response.choices[0]?.message?.content;
+  if (!content || content.trim() === "") {
+    throw new Error("AI returned empty response — possible rate limit or content filter");
+  }
+  return content;
 }
 
 // ─── Heuristic Classification ─────────────────────────────────────────────────
@@ -163,7 +150,7 @@ async function classifyWithAI(
     ],
   });
 
-  const raw = parseJSON<{
+  const raw = parseAIResponse<{
     documentType: string;
     confidence: number;
     reasoning: string;

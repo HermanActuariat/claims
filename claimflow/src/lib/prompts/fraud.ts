@@ -1,7 +1,7 @@
 /**
  * Prompt système — Scoring de fraude
  * Agent : IA Engineer / analyzeFraud()
- * Modèle : claude-sonnet-4-6
+ * Modèle : déterminé par le provider actif (via callWithFallback)
  */
 
 export const FRAUD_INDICATORS = `## Indicateurs de fraude (avec poids cumulatifs)

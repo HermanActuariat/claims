@@ -87,8 +87,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   // Trigger automation rules after status change
-  await executeRulesForClaim(id, session.user.id).catch(() => {
-    // Rules engine errors must not block the status update response
+  await executeRulesForClaim(id, session.user.id).catch((err) => {
+    console.error(`[claims/${id}/status] Rules engine failed after status change:`, err);
   });
 
   return NextResponse.json({ data: updated });
