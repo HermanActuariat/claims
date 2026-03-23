@@ -116,31 +116,118 @@ model Claim {
 }
 
 model Document {
-  id        String   @id @default(cuid())
-  filename  String
-  mimeType  String
-  size      Int
-  url       String   // file path or storage URL
+  id            String   @id @default(cuid())
+  filename      String
+  mimeType      String
+  size          Int
+  url           String   // file path or storage URL
+  documentType  String?  // ECONSTAT | INVOICE | PHOTO | POLICE_REPORT | EXPERT_REPORT | ID_CARD | INSURANCE_CARD | OTHER
+  ocrExtracted  Boolean  @default(false)
+  ocrData       String?  // JSON string — OCR extraction result
+  ocrConfidence Float?   // 0.0 – 1.0
 
-  claimId   String
-  claim     Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  claimId       String
+  claim         Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
+  createdAt     DateTime @default(now())
 }
 
 model AIAnalysis {
-  id          String   @id @default(cuid())
-  type        String   // EXTRACTION | FRAUD_SCORING | ESTIMATION | LETTER_GENERATION
-  inputData   String   // JSON string
-  outputData  String   // JSON string
-  tokensUsed  Int      @default(0)
-  durationMs  Int      @default(0)
-  model       String   @default("claude-sonnet-4-6")
+  id                    String   @id @default(cuid())
+  type                  String   // EXTRACTION | FRAUD_SCORING | ESTIMATION | LETTER_GENERATION
+  inputData             String   // JSON string
+  outputData            String   // JSON string
+  tokensUsed            Int      @default(0)
+  durationMs            Int      @default(0)
+  model                 String   @default("claude-sonnet-4-6")
+  provider              String   @default("ANTHROPIC") // ANTHROPIC | OPENAI | MISTRAL | GROQ
+  explainabilityReport  String?  // JSON string — ExplainabilityReport
+  confidenceScore       Float?   // 0.0 – 1.0
 
-  claimId     String
-  claim       Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  claimId               String
+  claim                 Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
+  contestations         AIContestation[]
+
+  createdAt             DateTime @default(now())
+}
+
+model AIContestation {
+  id            String   @id @default(cuid())
+  analysisId    String
+  analysis      AIAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  reason        String
+  status        String   @default("PENDING") // PENDING | ACCEPTED | REJECTED
+  resolution    String?  // Explanation of resolution
+  contestedBy   String   // userId
+  resolvedBy    String?  // userId
+  createdAt     DateTime @default(now())
+  resolvedAt    DateTime?
+
+  @@index([analysisId])
+  @@index([status])
+}
+
+model AutomationRule {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  active        Boolean  @default(true)
+  priority      Int      @default(0)
+  conditions    String   // JSON string — array of RuleCondition
+  action        String   // AUTO_APPROVE | ESCALATE_TO_MANAGER | REQUEST_INFO | FLAG_FRAUD
+  actionParams  String?  // JSON string — additional action parameters
+  createdBy     String   // userId
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  executionLogs RuleExecutionLog[]
+
+  @@index([active])
+}
+
+model RuleExecutionLog {
+  id            String   @id @default(cuid())
+  ruleId        String
+  rule          AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  claimId       String
+  action        String
+  success       Boolean  @default(true)
+  resultData    String?  // JSON string
+  errorMessage  String?
+  dryRun        Boolean  @default(false)
+  executedAt    DateTime @default(now())
+
+  @@index([ruleId])
+  @@index([claimId])
+}
+
+model AIProviderConfig {
+  id            String   @id @default(cuid())
+  provider      String   @unique // ANTHROPIC | OPENAI | MISTRAL | GROQ
+  displayName   String
+  active        Boolean  @default(false)
+  priority      Int      @default(0) // lower = higher priority
+  apiKeyEnvVar  String   // env var name for the API key
+  defaultModel  String
+  maxTokens     Int      @default(4096)
+  config        String?  // JSON string — extra provider config
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AIProviderLog {
+  id            String   @id @default(cuid())
+  provider      String
+  model         String
+  success       Boolean
+  tokensUsed    Int      @default(0)
+  durationMs    Int      @default(0)
+  errorMessage  String?
+  createdAt     DateTime @default(now())
+
+  @@index([provider])
+  @@index([createdAt])
 }
 
 model Comment {

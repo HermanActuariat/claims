@@ -68,7 +68,12 @@ Réponds UNIQUEMENT en JSON valide :
   "netEstimate": 0,
   "totalLoss": false,
   "confidence": "low | medium | high",
-  "methodology": "explication courte de la méthode de calcul"
+  "methodology": "explication courte de la méthode de calcul",
+  "explainability": {
+    "methodology": "detailed estimation methodology",
+    "limitations": ["list of estimation limitations"],
+    "dataSourcesUsed": ["list of data sources consulted"]
+  }
 }
 \`\`\`
 

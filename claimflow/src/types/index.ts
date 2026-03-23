@@ -28,6 +28,145 @@ export type AIAnalysisType =
   | "ESTIMATION"
   | "LETTER_GENERATION";
 
+// ─── Document Types (OCR / Classification) ──────────────────────────────────
+
+export type DocumentType =
+  | "ECONSTAT"
+  | "INVOICE"
+  | "PHOTO"
+  | "POLICE_REPORT"
+  | "EXPERT_REPORT"
+  | "ID_CARD"
+  | "INSURANCE_CARD"
+  | "OTHER";
+
+export interface OcrResult {
+  text: string;
+  fields: Record<string, string>;
+  confidence: number;
+  language: string;
+}
+
+export interface EconstatData {
+  dateAccident: string | null;
+  heureAccident: string | null;
+  lieuAccident: string | null;
+  vehiculeA: EconstatVehicle | null;
+  vehiculeB: EconstatVehicle | null;
+  circonstances: string[];
+  degats: string[];
+  temoins: EconstatTemoin[];
+  observations: string | null;
+  croquis: boolean;
+}
+
+export interface EconstatVehicle {
+  marque: string | null;
+  modele: string | null;
+  immatriculation: string | null;
+  assureur: string | null;
+  numContrat: string | null;
+  conducteur: string | null;
+  permisNum: string | null;
+}
+
+export interface EconstatTemoin {
+  nom: string | null;
+  adresse: string | null;
+  telephone: string | null;
+}
+
+export interface ClassificationResult {
+  documentType: DocumentType;
+  confidence: number;
+  reasoning: string;
+}
+
+// ─── Explainability & Contestation ──────────────────────────────────────────
+
+export type ContestationStatus = "PENDING" | "ACCEPTED" | "REJECTED";
+
+export interface ExplainabilityReport {
+  factors: ExplainabilityFactor[];
+  methodology: string;
+  limitations: string[];
+  confidenceScore: number;
+  dataSourcesUsed: string[];
+}
+
+export interface ExplainabilityFactor {
+  name: string;
+  description: string;
+  impact: "positive" | "negative" | "neutral";
+  weight: number;
+  evidence: string;
+}
+
+export interface ContestationItem {
+  id: string;
+  analysisId: string;
+  reason: string;
+  status: ContestationStatus;
+  resolution: string | null;
+  contestedBy: string;
+  resolvedBy: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+// ─── Automation Rules Engine ────────────────────────────────────────────────
+
+export type RuleAction =
+  | "AUTO_APPROVE"
+  | "ESCALATE_TO_MANAGER"
+  | "REQUEST_INFO"
+  | "FLAG_FRAUD";
+
+export interface RuleCondition {
+  field: string;
+  operator: "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "contains" | "in";
+  value: string | number | boolean | string[];
+}
+
+export interface AutomationRuleItem {
+  id: string;
+  name: string;
+  description: string | null;
+  active: boolean;
+  priority: number;
+  conditions: RuleCondition[];
+  action: RuleAction;
+  actionParams: Record<string, unknown> | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RuleExecutionLogItem {
+  id: string;
+  ruleId: string;
+  ruleName: string;
+  claimId: string;
+  action: string;
+  success: boolean;
+  resultData: Record<string, unknown> | null;
+  errorMessage: string | null;
+  dryRun: boolean;
+  executedAt: string;
+}
+
+export interface RuleSimulationResult {
+  ruleId: string;
+  ruleName: string;
+  matched: boolean;
+  action: RuleAction | null;
+  conditionResults: { field: string; matched: boolean; actual: unknown; expected: unknown }[];
+}
+
+// ─── Multi-Provider AI ──────────────────────────────────────────────────────
+
+export type AIProviderType = "ANTHROPIC" | "OPENAI" | "MISTRAL" | "GROQ";
+
 export type AuditAction =
   | "CLAIM_CREATED"
   | "CLAIM_UPDATED"
@@ -65,7 +204,17 @@ export type AuditAction =
   | "GDPR_PURGE_EXECUTED"
   | "SOLVENCY_PROVISIONS_COMPUTED"
   | "SOLVENCY_REPORT_GENERATED"
-  | "EXCEL_EXPORT_GENERATED";
+  | "EXCEL_EXPORT_GENERATED"
+  | "CONTESTATION_SUBMITTED"
+  | "CONTESTATION_RESOLVED"
+  | "RULE_CREATED"
+  | "RULE_UPDATED"
+  | "RULE_DELETED"
+  | "RULE_EXECUTED"
+  | "PROVIDER_CONFIG_UPDATED"
+  | "DOCUMENT_CLASSIFIED"
+  | "OCR_EXTRACTED"
+  | "ECONSTAT_IMPORTED";
 
 // Notification types
 export type NotificationType =

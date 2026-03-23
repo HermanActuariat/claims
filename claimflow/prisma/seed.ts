@@ -315,6 +315,30 @@ async function main() {
   }
 
   console.log("Claims created:", claimsData.length);
+
+  // Default AI Provider Configs
+  await prisma.aIProviderConfig.upsert({
+    where: { provider: "GROQ" },
+    update: {},
+    create: { provider: "GROQ", displayName: "Groq (LLaMA)", active: true, priority: 0, apiKeyEnvVar: "GROQ_API_KEY", defaultModel: "llama-3.3-70b-versatile" },
+  });
+  await prisma.aIProviderConfig.upsert({
+    where: { provider: "ANTHROPIC" },
+    update: {},
+    create: { provider: "ANTHROPIC", displayName: "Anthropic (Claude)", active: false, priority: 1, apiKeyEnvVar: "ANTHROPIC_API_KEY", defaultModel: "claude-sonnet-4-6" },
+  });
+  await prisma.aIProviderConfig.upsert({
+    where: { provider: "OPENAI" },
+    update: {},
+    create: { provider: "OPENAI", displayName: "OpenAI (GPT)", active: false, priority: 2, apiKeyEnvVar: "OPENAI_API_KEY", defaultModel: "gpt-4o" },
+  });
+  await prisma.aIProviderConfig.upsert({
+    where: { provider: "MISTRAL" },
+    update: {},
+    create: { provider: "MISTRAL", displayName: "Mistral AI", active: false, priority: 3, apiKeyEnvVar: "MISTRAL_API_KEY", defaultModel: "mistral-large-latest" },
+  });
+  console.log("AI Provider configs seeded");
+
   console.log("Seeding complete!");
 }
 

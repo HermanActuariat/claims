@@ -9,7 +9,7 @@ const PROBABILITY_TABLE: Record<string, Record<string, number>> = {
   CLOSED:         { DEFAULT: 0.98 },
 };
 
-export function getProbabilityResolution(status: string): number {
+export function getProbabilityResolution(status: string, _claimType?: string): number {
   return PROBABILITY_TABLE[status]?.DEFAULT ?? 0.60;
 }
 

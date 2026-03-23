@@ -54,7 +54,12 @@ Réponds UNIQUEMENT en JSON valide :
     }
   ],
   "summary": "synthèse objective en 2-3 phrases, ton neutre",
-  "recommendation": "action recommandée précise et actionnée"
+  "recommendation": "action recommandée précise et actionnée",
+  "explainability": {
+    "methodology": "description of scoring methodology used",
+    "limitations": ["list of analysis limitations"],
+    "dataSourcesUsed": ["list of data sources consulted"]
+  }
 }
 \`\`\`
 
