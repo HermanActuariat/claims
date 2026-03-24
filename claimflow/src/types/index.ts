@@ -214,7 +214,12 @@ export type AuditAction =
   | "PROVIDER_CONFIG_UPDATED"
   | "DOCUMENT_CLASSIFIED"
   | "OCR_EXTRACTED"
-  | "ECONSTAT_IMPORTED";
+  | "ECONSTAT_IMPORTED"
+  | "REPAIR_REFERENCE_CREATED"
+  | "REPAIR_REFERENCE_UPDATED"
+  | "GARAGE_QUOTE_CREATED"
+  | "GARAGE_QUOTE_VALIDATED"
+  | "SRA_ESTIMATION_COMPUTED";
 
 // Notification types
 export type NotificationType =
@@ -678,4 +683,74 @@ export interface SolvencyProvisionItem {
   probabilityResolution: number;
   status: string;
   computedAt: string;
+}
+
+// ─── SRA Bareme & Garage Quotes ─────────────────────────────────────────────
+
+export type RepairCategory = "BODY" | "MECHANICS" | "GLASS" | "PAINT" | "ELECTRICAL" | "INTERIOR" | "OTHER";
+
+export type VehicleSegment = "CITY" | "SEDAN" | "SUV" | "PREMIUM" | "UTILITY";
+
+export type QuoteLineType = "PART" | "LABOR" | "PAINT" | "CONSUMABLE" | "OTHER";
+
+export interface RepairReferenceItem {
+  id: string;
+  category: RepairCategory;
+  subcategory: string;
+  vehicleSegment: VehicleSegment;
+  avgPartCost: number;
+  avgLaborHours: number;
+  avgLaborRate: number;
+  source: string;
+  regionFactor: Record<string, number> | null;
+  validFrom: string;
+  validUntil: string | null;
+  updatedById: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GarageQuoteItem {
+  id: string;
+  claimId: string;
+  documentId: string;
+  garageName: string | null;
+  garageCity: string | null;
+  totalAmount: number | null;
+  lines: GarageQuoteLineItem[];
+  extractedByAI: boolean;
+  validatedById: string | null;
+  validatedAt: string | null;
+  createdAt: string;
+}
+
+export interface GarageQuoteLineItem {
+  id: string;
+  lineType: QuoteLineType;
+  description: string;
+  partReference: string | null;
+  quantity: number;
+  unitPriceHT: number;
+  laborHours: number | null;
+  laborRateHT: number | null;
+  totalHT: number;
+  confidence: number | null;
+}
+
+export interface SRAEstimationResult {
+  estimatedTotal: number;
+  min: number;
+  max: number;
+  breakdown: {
+    parts: number;
+    labor: number;
+    paint: number;
+    other: number;
+  };
+  franchise: number;
+  netEstimate: number;
+  confidence: "low" | "medium" | "high";
+  source: "BAREME_INTERNE" | "DEVIS_GARAGE" | "MIXTE";
+  regionalCoefficient: number;
+  methodology: string;
 }

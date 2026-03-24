@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { AIEstimateSchema } from "@/lib/validations";
-import { estimateIndemnization } from "@/lib/ai-service";
+import { estimateIndemnizationWithSRA } from "@/lib/ai-service";
 import { createAuditLog } from "@/lib/audit";
 import { checkAutoApproval } from "@/lib/claim-service";
+import { getRepairReferences, getRegionalCoefficient, CLAIM_TYPE_TO_REPAIR_CATEGORY } from "@/lib/sra-service";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -32,7 +33,25 @@ export async function POST(req: NextRequest) {
       coverageType: claim.policyholder.coverageType,
     };
 
-    const { result, tokensUsed, durationMs } = await estimateIndemnization(estimateData);
+    // Enrich with SRA bareme + garage quotes
+    const category = CLAIM_TYPE_TO_REPAIR_CATEGORY[claim.type] || "OTHER";
+    const baremeEntries = await getRepairReferences(category);
+    const garageQuotes = await prisma.garageQuote.findMany({
+      where: { claimId: claim.id, validatedAt: { not: null } },
+      include: { lines: true },
+    });
+    const department = claim.incidentZipCode?.substring(0, 2);
+    const regionalCoef = baremeEntries.length > 0
+      ? getRegionalCoefficient(baremeEntries[0].regionFactor, department ?? undefined)
+      : 1.0;
+
+    const sraContext = {
+      baremeEntries: baremeEntries.length > 0 ? baremeEntries : undefined,
+      garageQuote: garageQuotes.length > 0 ? garageQuotes[0] : undefined,
+      regionalCoef,
+    };
+
+    const { result, tokensUsed, durationMs } = await estimateIndemnizationWithSRA(estimateData, sraContext);
 
     const analysis = await prisma.aIAnalysis.create({
       data: {
@@ -63,9 +82,9 @@ export async function POST(req: NextRequest) {
       userId: session.user.id,
     });
 
-    return NextResponse.json({ data: { analysis, result } });
+    return NextResponse.json({ data: { analysis, result } }, { status: 201 });
   } catch (err) {
     console.error("[AI/estimate]", err);
-    return NextResponse.json({ error: "Erreur estimation", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur estimation" }, { status: 500 });
   }
 }
