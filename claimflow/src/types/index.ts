@@ -214,7 +214,11 @@ export type AuditAction =
   | "PROVIDER_CONFIG_UPDATED"
   | "DOCUMENT_CLASSIFIED"
   | "OCR_EXTRACTED"
-  | "ECONSTAT_IMPORTED";
+  | "ECONSTAT_IMPORTED"
+  | "REPAIR_REFERENCE_CREATED"
+  | "REPAIR_REFERENCE_UPDATED"
+  | "GARAGE_QUOTE_UPLOADED"
+  | "GARAGE_QUOTE_VALIDATED";
 
 // Notification types
 export type NotificationType =
@@ -423,6 +427,10 @@ export interface EstimationResult {
   franchise: number;
   netEstimate: number;
   confidence: "low" | "medium" | "high";
+  sraSource?: "BAREME_INTERNE" | "DEVIS_GARAGE" | "COMBINED";
+  sraBreakdown?: Record<string, number>;
+  garageQuoteTotal?: number;
+  garageName?: string;
 }
 
 export interface LetterResult {
@@ -678,4 +686,90 @@ export interface SolvencyProvisionItem {
   probabilityResolution: number;
   status: string;
   computedAt: string;
+}
+
+// ─── SRA Barème & Devis Garage ─────────────────────────────────────────────
+
+export type RepairCategory = "BODY" | "MECHANICS" | "GLASS" | "PAINT" | "ELECTRICAL" | "INTERIOR" | "OTHER";
+export type VehicleSegment = "CITY" | "SEDAN" | "SUV" | "PREMIUM" | "UTILITY";
+export type QuoteLineType = "PART" | "LABOR" | "PAINT" | "CONSUMABLE" | "OTHER";
+export type RepairSource = "SRA_OBSERVATOIRE" | "MANUAL" | "SRA_API";
+
+export const REPAIR_CATEGORY_LABELS: Record<RepairCategory, string> = {
+  BODY: "Carrosserie",
+  MECHANICS: "Mécanique",
+  GLASS: "Vitrage",
+  PAINT: "Peinture",
+  ELECTRICAL: "Électricité",
+  INTERIOR: "Intérieur",
+  OTHER: "Autre",
+};
+
+export const VEHICLE_SEGMENT_LABELS: Record<VehicleSegment, string> = {
+  CITY: "Citadine",
+  SEDAN: "Berline",
+  SUV: "SUV",
+  PREMIUM: "Premium",
+  UTILITY: "Utilitaire",
+};
+
+export const QUOTE_LINE_TYPE_LABELS: Record<QuoteLineType, string> = {
+  PART: "Pièce",
+  LABOR: "Main d'oeuvre",
+  PAINT: "Peinture",
+  CONSUMABLE: "Consommable",
+  OTHER: "Autre",
+};
+
+export interface RepairReferenceItem {
+  id: string;
+  category: RepairCategory;
+  subcategory: string;
+  vehicleSegment: VehicleSegment;
+  avgPartCost: number;
+  avgLaborHours: number;
+  avgLaborRate: number;
+  source: RepairSource;
+  regionFactor: Record<string, number> | null;
+  validFrom: string;
+  validUntil: string | null;
+  updatedById: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GarageQuoteItem {
+  id: string;
+  claimId: string;
+  documentId: string;
+  garageName: string | null;
+  garageCity: string | null;
+  totalAmount: number | null;
+  extractedByAI: boolean;
+  validatedById: string | null;
+  validatedAt: string | null;
+  lines: GarageQuoteLineItem[];
+  createdAt: string;
+}
+
+export interface GarageQuoteLineItem {
+  id: string;
+  lineType: QuoteLineType;
+  description: string;
+  partReference: string | null;
+  quantity: number;
+  unitPriceHT: number;
+  laborHours: number | null;
+  laborRateHT: number | null;
+  totalHT: number;
+  confidence: number | null;
+}
+
+export interface SRAEstimationResult {
+  source: "BAREME_INTERNE" | "DEVIS_GARAGE" | "COMBINED";
+  baremeEstimate: { total: number; breakdown: Record<RepairCategory, number> } | null;
+  garageQuoteTotal: number | null;
+  garageName: string | null;
+  regionCoefficient: number;
+  department: string | null;
 }

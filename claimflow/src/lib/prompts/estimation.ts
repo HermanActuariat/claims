@@ -47,6 +47,7 @@ ${BAREMES_2025_2026}
 3. Déduire la franchise contractuelle (valeur par défaut : 300 € si non précisée)
 4. Pour une perte totale : utiliser la valeur Argus − franchise
 5. Produire 3 scénarios (pessimiste / probable / optimiste)
+6. Si un barème SRA interne ou un devis garage réel est fourni, ancrer l'estimation sur ces données en priorité. Indiquer dans "methodology" la source utilisée.
 
 ## Format de sortie
 Réponds UNIQUEMENT en JSON valide :
@@ -73,7 +74,11 @@ Réponds UNIQUEMENT en JSON valide :
     "methodology": "detailed estimation methodology",
     "limitations": ["list of estimation limitations"],
     "dataSourcesUsed": ["list of data sources consulted"]
-  }
+  },
+  "sraSource": "BAREME_INTERNE | DEVIS_GARAGE | COMBINED | null",
+  "sraBreakdown": {"BODY": 0, "MECHANICS": 0},
+  "garageQuoteTotal": null,
+  "garageName": null
 }
 \`\`\`
 
@@ -83,8 +88,21 @@ Réponds UNIQUEMENT en JSON valide :
 - Signaler dans "methodology" si des informations manquent pour affiner l'estimation
 - Ne pas dépasser la valeur Argus du véhicule pour les dommages matériels`;
 
-export const estimationUserPrompt = (claimData: Record<string, unknown>) =>
-  `Données du sinistre à estimer :
-${JSON.stringify(claimData, null, 2)}
+export const estimationUserPrompt = (
+  claimData: Record<string, unknown>,
+  sraContext?: { baremeData?: string; garageQuoteData?: string }
+) => {
+  let prompt = `Données du sinistre à estimer :
+${JSON.stringify(claimData, null, 2)}`;
 
-Produis l'estimation d'indemnisation en appliquant les barèmes 2025-2026.`;
+  if (sraContext?.baremeData) {
+    prompt += `\n\n## Barème SRA interne (référence)\n${sraContext.baremeData}`;
+  }
+
+  if (sraContext?.garageQuoteData) {
+    prompt += `\n\n## Devis garage réel\n${sraContext.garageQuoteData}`;
+  }
+
+  prompt += `\n\nProduis l'estimation d'indemnisation en appliquant les barèmes 2025-2026.`;
+  return prompt;
+};

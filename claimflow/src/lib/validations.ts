@@ -279,3 +279,36 @@ export const UpdateProviderConfigSchema = z.object({
   defaultModel: z.string().min(1).optional(),
   maxTokens: z.number().int().min(1).max(32768).optional(),
 });
+
+// ─── SRA Barème & Garage Quotes schemas ─────────────────────────────────────
+
+export const CreateRepairReferenceSchema = z.object({
+  category: z.enum(["BODY", "MECHANICS", "GLASS", "PAINT", "ELECTRICAL", "INTERIOR", "OTHER"]),
+  subcategory: z.string().min(2, "Sous-catégorie requise").max(100),
+  vehicleSegment: z.enum(["CITY", "SEDAN", "SUV", "PREMIUM", "UTILITY"]),
+  avgPartCost: z.number().min(0, "Coût pièces >= 0"),
+  avgLaborHours: z.number().min(0, "Heures MO >= 0"),
+  avgLaborRate: z.number().min(0, "Taux horaire >= 0"),
+  source: z.enum(["SRA_OBSERVATOIRE", "MANUAL", "SRA_API"]).default("MANUAL"),
+  regionFactor: z.record(z.string(), z.number().min(0.5).max(2.0)).optional(),
+  validFrom: z.string().datetime({ offset: true }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
+  validUntil: z.string().datetime({ offset: true }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional().nullable(),
+});
+
+export const UpdateRepairReferenceSchema = CreateRepairReferenceSchema.partial();
+
+export const RepairReferenceQuerySchema = z.object({
+  category: z.enum(["BODY", "MECHANICS", "GLASS", "PAINT", "ELECTRICAL", "INTERIOR", "OTHER"]).optional(),
+  vehicleSegment: z.enum(["CITY", "SEDAN", "SUV", "PREMIUM", "UTILITY"]).optional(),
+  page: z.coerce.number().int().min(1).catch(1),
+  pageSize: z.coerce.number().int().min(1).max(100).catch(20),
+});
+
+export const ValidateGarageQuoteSchema = z.object({
+  validated: z.boolean(),
+});
+
+export const ComputeEstimationQuerySchema = z.object({
+  claimId: z.string().min(1, "ID sinistre requis"),
+  department: z.string().regex(/^\d{2,3}$/, "Département invalide (2-3 chiffres)").optional(),
+});
