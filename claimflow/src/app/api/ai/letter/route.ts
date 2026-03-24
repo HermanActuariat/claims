@@ -223,6 +223,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: { result } });
   } catch (err) {
     console.error("[AI/letter]", err);
-    return NextResponse.json({ error: "Erreur génération courrier", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur génération courrier" }, { status: 500 });
   }
 }

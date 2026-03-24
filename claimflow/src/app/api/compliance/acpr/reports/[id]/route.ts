@@ -28,7 +28,7 @@ export async function GET(
     return NextResponse.json({ data: report });
   } catch (err) {
     console.error("[GET /api/compliance/acpr/reports/[id]]", err);
-    return NextResponse.json({ error: "Erreur serveur", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
 
@@ -67,6 +67,6 @@ export async function DELETE(
     return NextResponse.json({ message: "Rapport supprimé" });
   } catch (err) {
     console.error("[DELETE /api/compliance/acpr/reports/[id]]", err);
-    return NextResponse.json({ error: "Erreur serveur", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

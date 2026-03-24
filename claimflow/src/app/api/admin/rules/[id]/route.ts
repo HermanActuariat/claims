@@ -86,7 +86,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   } catch (err) {
     console.error("[admin/rules/PATCH]", err);
     return NextResponse.json(
-      { error: "Erreur lors de la mise à jour de la règle", details: String(err) },
+      { error: "Erreur lors de la mise à jour de la règle" },
       { status: 500 }
     );
   }
@@ -120,7 +120,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   } catch (err) {
     console.error("[admin/rules/DELETE]", err);
     return NextResponse.json(
-      { error: "Erreur lors de la suppression de la règle", details: String(err) },
+      { error: "Erreur lors de la suppression de la règle" },
       { status: 500 }
     );
   }

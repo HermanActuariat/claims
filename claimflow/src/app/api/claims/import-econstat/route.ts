@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[claims/import-econstat]", err);
     return NextResponse.json(
-      { error: "Erreur import e-constat", details: String(err) },
+      { error: "Erreur import e-constat" },
       { status: 500 }
     );
   }

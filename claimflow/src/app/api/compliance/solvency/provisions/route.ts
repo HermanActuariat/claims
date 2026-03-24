@@ -40,6 +40,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ data: provisions, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
   } catch (err) {
     console.error("[GET /api/compliance/solvency/provisions]", err);
-    return NextResponse.json({ error: "Erreur serveur", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

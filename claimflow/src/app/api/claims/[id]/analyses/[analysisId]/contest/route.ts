@@ -57,7 +57,7 @@ export async function POST(
   } catch (err) {
     console.error("[contest/POST]", err);
     return NextResponse.json(
-      { error: "Erreur lors de la soumission de la contestation", details: String(err) },
+      { error: "Erreur lors de la soumission de la contestation" },
       { status: 500 }
     );
   }
@@ -89,7 +89,7 @@ export async function GET(
   } catch (err) {
     console.error("[contest/GET]", err);
     return NextResponse.json(
-      { error: "Erreur lors de la récupération des contestations", details: String(err) },
+      { error: "Erreur lors de la récupération des contestations" },
       { status: 500 }
     );
   }

@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest) {
   } catch (err) {
     console.error("[analytics/ai-supervision/GET]", err);
     return NextResponse.json(
-      { error: "Erreur lors de la récupération des statistiques IA", details: String(err) },
+      { error: "Erreur lors de la récupération des statistiques IA" },
       { status: 500 }
     );
   }

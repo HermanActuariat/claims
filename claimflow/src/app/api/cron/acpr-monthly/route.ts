@@ -66,6 +66,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, reportNumber, reportId: report.id });
   } catch (err) {
     console.error("[CRON /api/cron/acpr-monthly]", err);
-    return NextResponse.json({ error: "Erreur cron ACPR", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur cron ACPR" }, { status: 500 });
   }
 }

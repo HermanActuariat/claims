@@ -24,7 +24,7 @@ export async function GET() {
     return NextResponse.json({ data: config });
   } catch (err) {
     console.error("[GET /api/compliance/acpr/config]", err);
-    return NextResponse.json({ error: "Erreur serveur", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
 
@@ -67,6 +67,6 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ data: config });
   } catch (err) {
     console.error("[PUT /api/compliance/acpr/config]", err);
-    return NextResponse.json({ error: "Erreur serveur", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

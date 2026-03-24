@@ -25,6 +25,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error("[CRON /api/cron/gdpr-purge]", err);
-    return NextResponse.json({ error: "Erreur cron GDPR purge", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur cron GDPR purge" }, { status: 500 });
   }
 }

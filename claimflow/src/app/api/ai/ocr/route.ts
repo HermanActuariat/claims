@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[AI/ocr]", err);
     return NextResponse.json(
-      { error: "Erreur extraction OCR", details: String(err) },
+      { error: "Erreur extraction OCR" },
       { status: 500 }
     );
   }

@@ -39,6 +39,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ data: logs, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
   } catch (err) {
     console.error("[GET /api/compliance/gdpr/access-logs]", err);
-    return NextResponse.json({ error: "Erreur serveur", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

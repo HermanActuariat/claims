@@ -68,6 +68,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: { analysis, result } });
   } catch (err) {
     console.error("[AI/fraud]", err);
-    return NextResponse.json({ error: "Erreur analyse fraude", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur analyse fraude" }, { status: 500 });
   }
 }

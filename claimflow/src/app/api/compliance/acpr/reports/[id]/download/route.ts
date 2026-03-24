@@ -55,6 +55,6 @@ export async function GET(
     });
   } catch (err) {
     console.error("[GET /api/compliance/acpr/reports/[id]/download]", err);
-    return NextResponse.json({ error: "Erreur serveur", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

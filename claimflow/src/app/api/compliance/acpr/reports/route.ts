@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error("[GET /api/compliance/acpr/reports]", err);
-    return NextResponse.json({ error: "Erreur serveur", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
 
@@ -125,6 +125,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: report }, { status: 201 });
   } catch (err) {
     console.error("[POST /api/compliance/acpr/reports]", err);
-    return NextResponse.json({ error: "Erreur lors de la génération du rapport", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur lors de la génération du rapport" }, { status: 500 });
   }
 }

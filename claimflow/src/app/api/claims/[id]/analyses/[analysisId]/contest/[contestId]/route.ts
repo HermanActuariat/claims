@@ -79,7 +79,7 @@ export async function PATCH(
   } catch (err) {
     console.error("[contest/[contestId]/PATCH]", err);
     return NextResponse.json(
-      { error: "Erreur lors de la résolution de la contestation", details: String(err) },
+      { error: "Erreur lors de la résolution de la contestation" },
       { status: 500 }
     );
   }

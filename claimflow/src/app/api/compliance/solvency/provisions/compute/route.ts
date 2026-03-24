@@ -38,6 +38,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: result }, { status: 201 });
   } catch (err) {
     console.error("[POST /api/compliance/solvency/provisions/compute]", err);
-    return NextResponse.json({ error: "Erreur lors du calcul des provisions", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur lors du calcul des provisions" }, { status: 500 });
   }
 }

@@ -79,7 +79,7 @@ export async function PATCH(req: NextRequest) {
   } catch (err) {
     console.error("[admin/ai-providers/PATCH]", err);
     return NextResponse.json(
-      { error: "Erreur lors de la mise à jour du provider", details: String(err) },
+      { error: "Erreur lors de la mise à jour du provider" },
       { status: 500 }
     );
   }

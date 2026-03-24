@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[admin/rules/POST]", err);
     return NextResponse.json(
-      { error: "Erreur lors de la création de la règle", details: String(err) },
+      { error: "Erreur lors de la création de la règle" },
       { status: 500 }
     );
   }

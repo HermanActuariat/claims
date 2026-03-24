@@ -15,7 +15,7 @@ export async function GET(_req: NextRequest) {
   } catch (err) {
     console.error("[admin/ai-providers/stats/GET]", err);
     return NextResponse.json(
-      { error: "Erreur lors de la récupération des statistiques", details: String(err) },
+      { error: "Erreur lors de la récupération des statistiques" },
       { status: 500 }
     );
   }

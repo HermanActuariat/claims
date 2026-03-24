@@ -42,6 +42,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: { analysis, result } });
   } catch (err) {
     console.error("[AI/extract]", err);
-    return NextResponse.json({ error: "Erreur analyse IA", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur analyse IA" }, { status: 500 });
   }
 }

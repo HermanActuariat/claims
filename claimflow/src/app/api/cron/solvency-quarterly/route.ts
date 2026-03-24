@@ -29,6 +29,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error("[CRON /api/cron/solvency-quarterly]", err);
-    return NextResponse.json({ error: "Erreur cron Solvency II", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur cron Solvency II" }, { status: 500 });
   }
 }

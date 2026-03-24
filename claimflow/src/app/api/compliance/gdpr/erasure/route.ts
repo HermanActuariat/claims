@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ data: requests, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
   } catch (err) {
     console.error("[GET /api/compliance/gdpr/erasure]", err);
-    return NextResponse.json({ error: "Erreur serveur", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
 
@@ -97,6 +97,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: updated }, { status: 201 });
   } catch (err) {
     console.error("[POST /api/compliance/gdpr/erasure]", err);
-    return NextResponse.json({ error: "Erreur serveur", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

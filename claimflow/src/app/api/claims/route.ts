@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error("[GET /api/claims]", err);
-    return NextResponse.json({ error: "Erreur lors de la récupération des sinistres", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur lors de la récupération des sinistres" }, { status: 500 });
   }
 }
 
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[POST /api/claims] Error:", err);
     return NextResponse.json(
-      { error: "Erreur lors de la création du sinistre", details: String(err) },
+      { error: "Erreur lors de la création du sinistre" },
       { status: 500 }
     );
   }

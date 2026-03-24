@@ -58,6 +58,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error("[GET /api/compliance/export/xlsx]", err);
-    return NextResponse.json({ error: "Erreur lors de la génération du fichier Excel", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur lors de la génération du fichier Excel" }, { status: 500 });
   }
 }

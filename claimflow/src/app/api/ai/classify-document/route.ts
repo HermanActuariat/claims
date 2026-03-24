@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[AI/classify-document]", err);
     return NextResponse.json(
-      { error: "Erreur classification document", details: String(err) },
+      { error: "Erreur classification document" },
       { status: 500 }
     );
   }
