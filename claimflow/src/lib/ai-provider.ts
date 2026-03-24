@@ -44,9 +44,12 @@ export function createGroqAdapter(): AIProviderAdapter {
         ],
       });
 
-      const text = response.choices[0]?.message?.content ?? "{}";
+      const content = response.choices[0]?.message?.content;
+      if (!content || content.trim() === "") {
+        throw new Error("AI provider returned empty response — possible rate limit or content filter");
+      }
       const tokensUsed = response.usage?.total_tokens ?? 0;
-      return { text, tokensUsed };
+      return { text: content, tokensUsed };
     },
   };
 }

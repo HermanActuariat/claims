@@ -69,9 +69,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     let fraudResult: { result: Awaited<ReturnType<typeof analyzeFraud>>["result"]; tokensUsed: number; durationMs: number };
     try {
       fraudResult = await analyzeFraud(claimData);
-    } catch {
-      // Retry once with reduced maxTokens to get shorter, more parseable output
-      fraudResult = await analyzeFraud(claimData, undefined, { maxTokens: 1024 });
+    } catch (firstErr) {
+      const msg = firstErr instanceof Error ? firstErr.message : String(firstErr);
+      if (msg.includes("JSON") || msg.includes("parse") || msg.includes("réparation") || msg.includes("parseable")) {
+        console.warn(`[analyze] Fraud parse failed, retrying with reduced tokens:`, msg);
+        fraudResult = await analyzeFraud(claimData, undefined, { maxTokens: 1024 });
+      } else {
+        throw firstErr;
+      }
     }
     const { result: fraud, tokensUsed, durationMs } = fraudResult;
 
@@ -168,5 +173,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     },
   });
 
-  return NextResponse.json({ data: { claim: updatedClaim, results } });
+  // If all AI steps failed, return 500
+  const allFailed = results.extractionError && results.fraudError && results.estimationError;
+  const hasWarnings = (results.extractionError || results.fraudError || results.estimationError) && !allFailed;
+
+  if (allFailed) {
+    return NextResponse.json(
+      { error: "Toutes les analyses IA ont échoué", data: { claim: updatedClaim, results } },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({
+    data: { claim: updatedClaim, results },
+    ...(hasWarnings ? { warnings: Object.entries(results).filter(([k]) => k.endsWith("Error")).map(([k, v]) => `${k}: ${v}`) } : {}),
+  });
 }
