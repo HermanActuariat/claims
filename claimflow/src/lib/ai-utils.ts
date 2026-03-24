@@ -13,8 +13,8 @@
 function sanitizeJSON(raw: string): string {
   let s = raw;
 
-  // 1. Remove JS-style comments (// ... and /* ... */)
-  s = s.replace(/\/\/[^\n]*/g, "");
+  // 1. Remove multi-line JS comments only (single-line // removal
+  // is skipped because it corrupts URLs like "https://...")
   s = s.replace(/\/\*[\s\S]*?\*\//g, "");
 
   // 2. Remove control characters (keep \n \r \t)
