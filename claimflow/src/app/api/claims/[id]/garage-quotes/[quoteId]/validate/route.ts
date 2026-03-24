@@ -34,24 +34,35 @@ export async function PATCH(
   // Apply corrections if any
   if (parsed.data.corrections) {
     for (const correction of parsed.data.corrections) {
+      const line = quote.lines.find((l) => l.id === correction.lineId);
+      if (!line) {
+        return NextResponse.json(
+          { error: `Ligne introuvable: ${correction.lineId}` },
+          { status: 400 }
+        );
+      }
+
       const updateData: Record<string, unknown> = {};
       if (correction.unitPriceHT !== undefined) updateData.unitPriceHT = correction.unitPriceHT;
       if (correction.quantity !== undefined) updateData.quantity = correction.quantity;
       if (correction.laborHours !== undefined) updateData.laborHours = correction.laborHours;
       if (correction.description !== undefined) updateData.description = correction.description;
 
-      // Recalculate totalHT
-      const line = quote.lines.find((l) => l.id === correction.lineId);
-      if (line) {
+      // Recalculate totalHT based on line type
+      if (line.lineType === "LABOR") {
+        const hours = correction.laborHours ?? line.laborHours ?? 0;
+        const rate = correction.unitPriceHT ?? line.laborRateHT ?? 0;
+        updateData.totalHT = hours * rate;
+      } else {
         const qty = correction.quantity ?? line.quantity;
         const price = correction.unitPriceHT ?? line.unitPriceHT;
         updateData.totalHT = qty * price;
-
-        await prisma.garageQuoteLine.update({
-          where: { id: correction.lineId },
-          data: updateData,
-        });
       }
+
+      await prisma.garageQuoteLine.update({
+        where: { id: correction.lineId },
+        data: updateData,
+      });
     }
   }
 

@@ -42,19 +42,24 @@ export async function PATCH(
     updateData.validUntil = validUntil ? new Date(validUntil) : null;
   }
 
-  const updated = await prisma.repairReference.update({
-    where: { id },
-    data: updateData,
-  });
+  try {
+    const updated = await prisma.repairReference.update({
+      where: { id },
+      data: updateData,
+    });
 
-  await createAuditLog({
-    action: "REPAIR_REFERENCE_UPDATED",
-    entityType: "REPAIR_REFERENCE",
-    entityId: id,
-    before: existing,
-    after: updated,
-    userId: session.user.id,
-  });
+    await createAuditLog({
+      action: "REPAIR_REFERENCE_UPDATED",
+      entityType: "REPAIR_REFERENCE",
+      entityId: id,
+      before: existing,
+      after: updated,
+      userId: session.user.id,
+    });
 
-  return NextResponse.json({ data: updated });
+    return NextResponse.json({ data: updated });
+  } catch (err) {
+    console.error("[repair-references/PATCH]", err);
+    return NextResponse.json({ error: "Erreur mise a jour reference" }, { status: 500 });
+  }
 }

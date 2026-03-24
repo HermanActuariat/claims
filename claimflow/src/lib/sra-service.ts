@@ -34,6 +34,19 @@ Regles :
 - totalHT = quantity * unitPriceHT (ou laborHours * laborRateHT pour LABOR)
 - Repondre UNIQUEMENT en JSON valide, sans texte supplementaire`;
 
+// ─── Constants ──────────────────────────────────────────────────────────────
+
+export const CLAIM_TYPE_TO_REPAIR_CATEGORY: Record<string, string> = {
+  COLLISION: "BODY",
+  GLASS: "GLASS",
+  FIRE: "OTHER",
+  VANDALISM: "BODY",
+  THEFT: "OTHER",
+  OTHER: "OTHER",
+  NATURAL_DISASTER: "OTHER",
+  BODILY_INJURY: "OTHER",
+};
+
 // ─── Public Functions ───────────────────────────────────────────────────────
 
 export async function getRepairReferences(
@@ -67,7 +80,8 @@ export function getRegionalCoefficient(
       return factors[department];
     }
     return factors["default"] ?? 1.0;
-  } catch {
+  } catch (err) {
+    console.warn(`[sra-service] Failed to parse regionFactor: ${regionFactor}`, err);
     return 1.0;
   }
 }
@@ -133,18 +147,7 @@ export async function computeSRAEstimation(
   if (!claim) throw new Error("Sinistre introuvable");
 
   // Map claim type to repair category
-  const claimTypeToCategory: Record<string, string> = {
-    COLLISION: "BODY",
-    GLASS: "GLASS",
-    FIRE: "OTHER",
-    VANDALISM: "BODY",
-    THEFT: "OTHER",
-    OTHER: "OTHER",
-    NATURAL_DISASTER: "OTHER",
-    BODILY_INJURY: "OTHER",
-  };
-
-  const category = claimTypeToCategory[claim.type] || "OTHER";
+  const category = CLAIM_TYPE_TO_REPAIR_CATEGORY[claim.type] || "OTHER";
 
   // Lookup bareme entries
   const baremeEntries = await getRepairReferences(category);

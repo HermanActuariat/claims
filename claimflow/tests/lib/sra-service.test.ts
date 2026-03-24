@@ -69,6 +69,10 @@ describe("sra-service", () => {
     it("returns 1.0 when regionFactor is null", () => {
       expect(getRegionalCoefficient(null, "75")).toBe(1.0);
     });
+
+    it("returns 1.0 when regionFactor is malformed JSON", () => {
+      expect(getRegionalCoefficient("not-valid-json", "75")).toBe(1.0);
+    });
   });
 
   describe("computeSRAEstimation", () => {
@@ -97,6 +101,64 @@ describe("sra-service", () => {
       expect(result.regionalCoefficient).toBe(1.15);
       // parts=250*1.15=287.5, labor=3*55*1.15=189.75 → total=477.25
       expect(result.estimatedTotal).toBeCloseTo(477.25, 1);
+    });
+
+    it("throws when claim not found", async () => {
+      vi.mocked(prisma.claim.findUnique).mockResolvedValue(null);
+      await expect(computeSRAEstimation("unknown-id")).rejects.toThrow("Sinistre introuvable");
+    });
+
+    it("returns zero estimation when no bareme and no quotes", async () => {
+      vi.mocked(prisma.claim.findUnique).mockResolvedValue(mockClaim as never);
+      vi.mocked(prisma.repairReference.findMany).mockResolvedValue([] as never);
+      vi.mocked(prisma.garageQuote.findMany).mockResolvedValue([] as never);
+
+      const result = await computeSRAEstimation("claim1");
+      expect(result.estimatedTotal).toBe(0);
+      expect(result.confidence).toBe("low");
+      expect(result.source).toBe("BAREME_INTERNE");
+    });
+
+    it("averages correctly with multiple bareme entries", async () => {
+      vi.mocked(prisma.claim.findUnique).mockResolvedValue(mockClaim as never);
+      vi.mocked(prisma.repairReference.findMany).mockResolvedValue([
+        {
+          id: "r1", category: "BODY", avgPartCost: 200, avgLaborHours: 2, avgLaborRate: 50,
+          regionFactor: JSON.stringify({ "75": 1.0, "default": 1.0 }),
+          validFrom: new Date(), validUntil: null, vehicleSegment: "CITY",
+        },
+        {
+          id: "r2", category: "BODY", avgPartCost: 400, avgLaborHours: 4, avgLaborRate: 60,
+          regionFactor: null,
+          validFrom: new Date(), validUntil: null, vehicleSegment: "CITY",
+        },
+      ] as never);
+      vi.mocked(prisma.garageQuote.findMany).mockResolvedValue([] as never);
+
+      const result = await computeSRAEstimation("claim1");
+      // avg parts=(200+400)/2=300, avg labor=(2*50+4*60)/2=170 → total=470 * coef 1.0
+      expect(result.estimatedTotal).toBeCloseTo(470, 0);
+      expect(result.source).toBe("BAREME_INTERNE");
+    });
+
+    it("returns DEVIS_GARAGE source when quote exists but no baremes", async () => {
+      vi.mocked(prisma.claim.findUnique).mockResolvedValue(mockClaim as never);
+      vi.mocked(prisma.repairReference.findMany).mockResolvedValue([] as never);
+      vi.mocked(prisma.garageQuote.findMany).mockResolvedValue([
+        {
+          id: "q1",
+          lines: [
+            { lineType: "PART", totalHT: 500 },
+            { lineType: "LABOR", totalHT: 200 },
+          ],
+          validatedAt: new Date(),
+        },
+      ] as never);
+
+      const result = await computeSRAEstimation("claim1");
+      expect(result.source).toBe("DEVIS_GARAGE");
+      expect(result.confidence).toBe("high");
+      expect(result.estimatedTotal).toBeCloseTo(700, 0);
     });
 
     it("uses garage quote when available", async () => {

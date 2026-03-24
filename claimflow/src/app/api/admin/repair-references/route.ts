@@ -24,23 +24,28 @@ export async function GET(req: NextRequest) {
     ...(vehicleSegment ? { vehicleSegment } : {}),
   };
 
-  const [data, total] = await Promise.all([
-    prisma.repairReference.findMany({
-      where,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      orderBy: [{ category: "asc" }, { vehicleSegment: "asc" }],
-    }),
-    prisma.repairReference.count({ where }),
-  ]);
+  try {
+    const [data, total] = await Promise.all([
+      prisma.repairReference.findMany({
+        where,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: [{ category: "asc" }, { vehicleSegment: "asc" }],
+      }),
+      prisma.repairReference.count({ where }),
+    ]);
 
-  return NextResponse.json({
-    data,
-    total,
-    page,
-    pageSize,
-    totalPages: Math.ceil(total / pageSize),
-  });
+    return NextResponse.json({
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    });
+  } catch (err) {
+    console.error("[repair-references/GET]", err);
+    return NextResponse.json({ error: "Erreur lecture references" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -58,23 +63,28 @@ export async function POST(req: NextRequest) {
 
   const { regionFactor, validFrom, validUntil, ...rest } = parsed.data;
 
-  const reference = await prisma.repairReference.create({
-    data: {
-      ...rest,
-      regionFactor: regionFactor ? JSON.stringify(regionFactor) : null,
-      validFrom: new Date(validFrom),
-      validUntil: validUntil ? new Date(validUntil) : null,
-      updatedById: session.user.id,
-    },
-  });
+  try {
+    const reference = await prisma.repairReference.create({
+      data: {
+        ...rest,
+        regionFactor: regionFactor ? JSON.stringify(regionFactor) : null,
+        validFrom: new Date(validFrom),
+        validUntil: validUntil ? new Date(validUntil) : null,
+        updatedById: session.user.id,
+      },
+    });
 
-  await createAuditLog({
-    action: "REPAIR_REFERENCE_CREATED",
-    entityType: "REPAIR_REFERENCE",
-    entityId: reference.id,
-    after: reference,
-    userId: session.user.id,
-  });
+    await createAuditLog({
+      action: "REPAIR_REFERENCE_CREATED",
+      entityType: "REPAIR_REFERENCE",
+      entityId: reference.id,
+      after: reference,
+      userId: session.user.id,
+    });
 
-  return NextResponse.json({ data: reference }, { status: 201 });
+    return NextResponse.json({ data: reference }, { status: 201 });
+  } catch (err) {
+    console.error("[repair-references/POST]", err);
+    return NextResponse.json({ error: "Erreur creation reference" }, { status: 500 });
+  }
 }

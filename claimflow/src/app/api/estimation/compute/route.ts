@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { EstimationComputeSchema } from "@/lib/validations";
 import { computeSRAEstimation } from "@/lib/sra-service";
+import { createAuditLog } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -15,9 +16,19 @@ export async function GET(req: NextRequest) {
 
   try {
     const result = await computeSRAEstimation(parsed.data.claimId, parsed.data.department);
+
+    await createAuditLog({
+      action: "SRA_ESTIMATION_COMPUTED",
+      entityType: "CLAIM",
+      entityId: parsed.data.claimId,
+      after: { estimatedTotal: result.estimatedTotal, source: result.source },
+      claimId: parsed.data.claimId,
+      userId: session.user.id,
+    });
+
     return NextResponse.json({ data: result });
   } catch (err) {
     console.error("[estimation/compute]", err);
-    return NextResponse.json({ error: "Erreur estimation", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur estimation" }, { status: 500 });
   }
 }

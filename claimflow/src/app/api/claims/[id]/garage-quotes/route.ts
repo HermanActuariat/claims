@@ -91,24 +91,25 @@ export async function POST(
         });
       }
 
-      return tx.garageQuote.findUnique({
+      const fullQuote = await tx.garageQuote.findUnique({
         where: { id: garageQuote.id },
         include: { lines: true },
       });
+      return { garageQuote, fullQuote };
     });
 
     await createAuditLog({
       action: "GARAGE_QUOTE_CREATED",
       entityType: "GARAGE_QUOTE",
-      entityId: quote!.id,
-      after: { quoteId: quote!.id, linesCount: extraction.lines.length },
+      entityId: quote.garageQuote.id,
+      after: { quoteId: quote.garageQuote.id, linesCount: extraction.lines.length },
       claimId: id,
       userId: session.user.id,
     });
 
-    return NextResponse.json({ data: quote }, { status: 201 });
+    return NextResponse.json({ data: quote.fullQuote }, { status: 201 });
   } catch (err) {
     console.error("[garage-quotes/POST]", err);
-    return NextResponse.json({ error: "Erreur creation devis", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur creation devis" }, { status: 500 });
   }
 }

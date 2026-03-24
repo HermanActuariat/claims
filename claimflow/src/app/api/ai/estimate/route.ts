@@ -5,7 +5,7 @@ import { AIEstimateSchema } from "@/lib/validations";
 import { estimateIndemnizationWithSRA } from "@/lib/ai-service";
 import { createAuditLog } from "@/lib/audit";
 import { checkAutoApproval } from "@/lib/claim-service";
-import { getRepairReferences, getRegionalCoefficient } from "@/lib/sra-service";
+import { getRepairReferences, getRegionalCoefficient, CLAIM_TYPE_TO_REPAIR_CATEGORY } from "@/lib/sra-service";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -34,12 +34,7 @@ export async function POST(req: NextRequest) {
     };
 
     // Enrich with SRA bareme + garage quotes
-    const claimTypeToCategory: Record<string, string> = {
-      COLLISION: "BODY", GLASS: "GLASS", FIRE: "OTHER",
-      VANDALISM: "BODY", THEFT: "OTHER", OTHER: "OTHER",
-      NATURAL_DISASTER: "OTHER", BODILY_INJURY: "OTHER",
-    };
-    const category = claimTypeToCategory[claim.type] || "OTHER";
+    const category = CLAIM_TYPE_TO_REPAIR_CATEGORY[claim.type] || "OTHER";
     const baremeEntries = await getRepairReferences(category);
     const garageQuotes = await prisma.garageQuote.findMany({
       where: { claimId: claim.id, validatedAt: { not: null } },
@@ -87,9 +82,9 @@ export async function POST(req: NextRequest) {
       userId: session.user.id,
     });
 
-    return NextResponse.json({ data: { analysis, result } });
+    return NextResponse.json({ data: { analysis, result } }, { status: 201 });
   } catch (err) {
     console.error("[AI/estimate]", err);
-    return NextResponse.json({ error: "Erreur estimation", details: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Erreur estimation" }, { status: 500 });
   }
 }
