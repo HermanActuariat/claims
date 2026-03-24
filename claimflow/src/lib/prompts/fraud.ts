@@ -66,8 +66,9 @@ Réponds UNIQUEMENT en JSON valide :
 ## Règles de calcul
 - Score = somme des poids des indicateurs détectés
 - Plafonner à 100
-- Lister TOUS les indicateurs (detected: false si non présent)
-- Ne pas inventer d'indicateurs hors de la liste fournie`;
+- Lister UNIQUEMENT les indicateurs détectés (detected: true) — NE PAS inclure ceux non détectés
+- Ne pas inventer d'indicateurs hors de la liste fournie
+- Le JSON doit être strictement valide (pas de virgule trailing, pas de commentaires)`;
 
 export const fraudUserPrompt = (claimData: Record<string, unknown>) =>
   `Données complètes du dossier de sinistre à analyser :
