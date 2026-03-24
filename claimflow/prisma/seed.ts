@@ -339,6 +339,55 @@ async function main() {
   });
   console.log("AI Provider configs seeded");
 
+  // ─── SRA Bareme initial data ─────────────────────────────────────────────
+  await prisma.repairReference.deleteMany({});
+
+  const repairRefs = [
+    // BODY
+    { category: "BODY", subcategory: "Aile avant", vehicleSegment: "CITY", avgPartCost: 250, avgLaborHours: 3, avgLaborRate: 55 },
+    { category: "BODY", subcategory: "Aile avant", vehicleSegment: "SEDAN", avgPartCost: 350, avgLaborHours: 3.5, avgLaborRate: 60 },
+    { category: "BODY", subcategory: "Aile avant", vehicleSegment: "SUV", avgPartCost: 450, avgLaborHours: 4, avgLaborRate: 65 },
+    { category: "BODY", subcategory: "Aile avant", vehicleSegment: "PREMIUM", avgPartCost: 800, avgLaborHours: 4, avgLaborRate: 85 },
+    { category: "BODY", subcategory: "Pare-chocs avant", vehicleSegment: "CITY", avgPartCost: 200, avgLaborHours: 2, avgLaborRate: 55 },
+    { category: "BODY", subcategory: "Pare-chocs avant", vehicleSegment: "SEDAN", avgPartCost: 300, avgLaborHours: 2.5, avgLaborRate: 60 },
+    { category: "BODY", subcategory: "Pare-chocs avant", vehicleSegment: "SUV", avgPartCost: 400, avgLaborHours: 3, avgLaborRate: 65 },
+    { category: "BODY", subcategory: "Pare-chocs avant", vehicleSegment: "PREMIUM", avgPartCost: 700, avgLaborHours: 3, avgLaborRate: 85 },
+    { category: "BODY", subcategory: "Porte", vehicleSegment: "CITY", avgPartCost: 300, avgLaborHours: 4, avgLaborRate: 55 },
+    { category: "BODY", subcategory: "Porte", vehicleSegment: "SEDAN", avgPartCost: 450, avgLaborHours: 4.5, avgLaborRate: 60 },
+    { category: "BODY", subcategory: "Porte", vehicleSegment: "SUV", avgPartCost: 550, avgLaborHours: 5, avgLaborRate: 65 },
+    { category: "BODY", subcategory: "Porte", vehicleSegment: "PREMIUM", avgPartCost: 1000, avgLaborHours: 5, avgLaborRate: 85 },
+    // MECHANICS
+    { category: "MECHANICS", subcategory: "Radiateur", vehicleSegment: "CITY", avgPartCost: 200, avgLaborHours: 2, avgLaborRate: 60 },
+    { category: "MECHANICS", subcategory: "Radiateur", vehicleSegment: "SEDAN", avgPartCost: 300, avgLaborHours: 2.5, avgLaborRate: 65 },
+    { category: "MECHANICS", subcategory: "Radiateur", vehicleSegment: "SUV", avgPartCost: 400, avgLaborHours: 3, avgLaborRate: 70 },
+    { category: "MECHANICS", subcategory: "Radiateur", vehicleSegment: "PREMIUM", avgPartCost: 600, avgLaborHours: 3, avgLaborRate: 90 },
+    // GLASS
+    { category: "GLASS", subcategory: "Pare-brise", vehicleSegment: "CITY", avgPartCost: 250, avgLaborHours: 1.5, avgLaborRate: 50 },
+    { category: "GLASS", subcategory: "Pare-brise", vehicleSegment: "SEDAN", avgPartCost: 350, avgLaborHours: 1.5, avgLaborRate: 55 },
+    { category: "GLASS", subcategory: "Pare-brise", vehicleSegment: "SUV", avgPartCost: 450, avgLaborHours: 2, avgLaborRate: 60 },
+    { category: "GLASS", subcategory: "Pare-brise", vehicleSegment: "PREMIUM", avgPartCost: 800, avgLaborHours: 2, avgLaborRate: 75 },
+    // PAINT
+    { category: "PAINT", subcategory: "Element complet", vehicleSegment: "CITY", avgPartCost: 50, avgLaborHours: 4, avgLaborRate: 50 },
+    { category: "PAINT", subcategory: "Element complet", vehicleSegment: "SEDAN", avgPartCost: 60, avgLaborHours: 5, avgLaborRate: 55 },
+    { category: "PAINT", subcategory: "Element complet", vehicleSegment: "SUV", avgPartCost: 70, avgLaborHours: 5.5, avgLaborRate: 60 },
+    { category: "PAINT", subcategory: "Element complet", vehicleSegment: "PREMIUM", avgPartCost: 100, avgLaborHours: 6, avgLaborRate: 80 },
+  ];
+
+  const defaultRegionFactor = JSON.stringify({ "75": 1.15, "92": 1.12, "69": 1.05, "13": 1.03, "default": 1.0 });
+
+  for (const ref of repairRefs) {
+    await prisma.repairReference.create({
+      data: {
+        ...ref,
+        source: "SRA_OBSERVATOIRE",
+        regionFactor: defaultRegionFactor,
+        validFrom: new Date("2026-01-01"),
+        updatedById: admin.id,
+      },
+    });
+  }
+  console.log("SRA Bareme references seeded:", repairRefs.length);
+
   console.log("Seeding complete!");
 }
 

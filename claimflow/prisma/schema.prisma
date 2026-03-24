@@ -32,6 +32,8 @@ model User {
   gdprAccessLogs          GdprDataAccessLog[]      @relation("GdprAccessor")
   solvencyProvisions      SolvencyProvision[]      @relation("ProvisionAuthor")
   solvencyReports         SolvencyReport[]         @relation("SolvencyReportAuthor")
+  repairReferences        RepairReference[]        @relation("RepairRefAuthor")
+  validatedQuotes         GarageQuote[]            @relation("QuoteValidator")
 }
 
 model Policyholder {
@@ -112,6 +114,7 @@ model Claim {
   notifications      Notification[]      @relation("ClaimNotifications")
   fraudNetwork       FraudNetwork?       @relation("ClaimNetwork", fields: [networkId], references: [id])
   provisions         SolvencyProvision[] @relation("ClaimProvisions")
+  garageQuotes       GarageQuote[]
 }
 
 model Document {
@@ -127,6 +130,8 @@ model Document {
 
   claimId       String
   claim         Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  garageQuote   GarageQuote?
 
   createdAt     DateTime @default(now())
 }
@@ -532,4 +537,61 @@ model SolvencyReport {
   generatedBy     User?    @relation("SolvencyReportAuthor", fields: [generatedById], references: [id])
   snapshotJson    String?
   @@index([periodQuarter])
+}
+
+model RepairReference {
+  id              String   @id @default(cuid())
+  category        String   // BODY | MECHANICS | GLASS | PAINT | ELECTRICAL | INTERIOR | OTHER
+  subcategory     String
+  vehicleSegment  String   // CITY | SEDAN | SUV | PREMIUM | UTILITY
+  avgPartCost     Float
+  avgLaborHours   Float
+  avgLaborRate    Float
+  source          String   // SRA_OBSERVATOIRE | MANUAL | SRA_API
+  regionFactor    String?  // JSON: { "75": 1.15, "69": 1.05, "default": 1.0 }
+  validFrom       DateTime
+  validUntil      DateTime?
+  updatedById     String
+  updatedBy       User     @relation("RepairRefAuthor", fields: [updatedById], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category, vehicleSegment])
+  @@index([validFrom])
+}
+
+model GarageQuote {
+  id              String            @id @default(cuid())
+  claimId         String
+  claim           Claim             @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  documentId      String            @unique
+  document        Document          @relation(fields: [documentId], references: [id])
+  garageName      String?
+  garageCity      String?
+  totalAmount     Float?
+  lines           GarageQuoteLine[]
+  extractedByAI   Boolean           @default(false)
+  validatedById   String?
+  validatedBy     User?             @relation("QuoteValidator", fields: [validatedById], references: [id])
+  validatedAt     DateTime?
+  createdAt       DateTime          @default(now())
+
+  @@index([claimId])
+}
+
+model GarageQuoteLine {
+  id              String      @id @default(cuid())
+  quoteId         String
+  quote           GarageQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  lineType        String      // PART | LABOR | PAINT | CONSUMABLE | OTHER
+  description     String
+  partReference   String?
+  quantity        Int         @default(1)
+  unitPriceHT     Float
+  laborHours      Float?
+  laborRateHT     Float?
+  totalHT         Float
+  confidence      Float?      // 0.0-1.0, AI extraction confidence
+
+  @@index([quoteId])
 }

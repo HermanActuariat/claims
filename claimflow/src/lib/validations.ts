@@ -279,3 +279,53 @@ export const UpdateProviderConfigSchema = z.object({
   defaultModel: z.string().min(1).optional(),
   maxTokens: z.number().int().min(1).max(32768).optional(),
 });
+
+// ─── SRA Bareme & Garage Quotes schemas ─────────────────────────────────────
+
+export const RepairCategoryEnum = z.enum(["BODY", "MECHANICS", "GLASS", "PAINT", "ELECTRICAL", "INTERIOR", "OTHER"]);
+export const VehicleSegmentEnum = z.enum(["CITY", "SEDAN", "SUV", "PREMIUM", "UTILITY"]);
+export const QuoteLineTypeEnum = z.enum(["PART", "LABOR", "PAINT", "CONSUMABLE", "OTHER"]);
+
+export const CreateRepairReferenceSchema = z.object({
+  category: RepairCategoryEnum,
+  subcategory: z.string().min(2, "Sous-categorie requise").max(100),
+  vehicleSegment: VehicleSegmentEnum,
+  avgPartCost: z.number().min(0, "Cout pieces positif"),
+  avgLaborHours: z.number().min(0, "Heures MO positives"),
+  avgLaborRate: z.number().min(0, "Taux MO positif"),
+  source: z.string().min(1).default("MANUAL"),
+  regionFactor: z.record(z.number().min(0.5).max(2.0)).optional(),
+  validFrom: z.string().datetime({ offset: true }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
+  validUntil: z.string().datetime({ offset: true }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
+});
+
+export const UpdateRepairReferenceSchema = CreateRepairReferenceSchema.partial();
+
+export const RepairReferenceQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).catch(1),
+  pageSize: z.coerce.number().int().min(1).max(100).catch(20),
+  category: RepairCategoryEnum.optional(),
+  vehicleSegment: VehicleSegmentEnum.optional(),
+});
+
+export const CreateGarageQuoteSchema = z.object({
+  documentId: z.string().cuid("ID document invalide"),
+  garageName: z.string().optional(),
+  garageCity: z.string().optional(),
+});
+
+export const ValidateGarageQuoteSchema = z.object({
+  validated: z.boolean(),
+  corrections: z.array(z.object({
+    lineId: z.string().cuid(),
+    unitPriceHT: z.number().min(0).optional(),
+    quantity: z.number().int().min(1).optional(),
+    laborHours: z.number().min(0).optional(),
+    description: z.string().optional(),
+  })).optional(),
+});
+
+export const EstimationComputeSchema = z.object({
+  claimId: z.string().cuid("ID sinistre invalide"),
+  department: z.string().regex(/^\d{2,3}$/, "Departement invalide (2-3 chiffres)").optional(),
+});

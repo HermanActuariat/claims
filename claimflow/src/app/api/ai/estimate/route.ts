@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { AIEstimateSchema } from "@/lib/validations";
-import { estimateIndemnization } from "@/lib/ai-service";
+import { estimateIndemnizationWithSRA } from "@/lib/ai-service";
 import { createAuditLog } from "@/lib/audit";
 import { checkAutoApproval } from "@/lib/claim-service";
+import { getRepairReferences, getRegionalCoefficient } from "@/lib/sra-service";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -32,7 +33,30 @@ export async function POST(req: NextRequest) {
       coverageType: claim.policyholder.coverageType,
     };
 
-    const { result, tokensUsed, durationMs } = await estimateIndemnization(estimateData);
+    // Enrich with SRA bareme + garage quotes
+    const claimTypeToCategory: Record<string, string> = {
+      COLLISION: "BODY", GLASS: "GLASS", FIRE: "OTHER",
+      VANDALISM: "BODY", THEFT: "OTHER", OTHER: "OTHER",
+      NATURAL_DISASTER: "OTHER", BODILY_INJURY: "OTHER",
+    };
+    const category = claimTypeToCategory[claim.type] || "OTHER";
+    const baremeEntries = await getRepairReferences(category);
+    const garageQuotes = await prisma.garageQuote.findMany({
+      where: { claimId: claim.id, validatedAt: { not: null } },
+      include: { lines: true },
+    });
+    const department = claim.incidentZipCode?.substring(0, 2);
+    const regionalCoef = baremeEntries.length > 0
+      ? getRegionalCoefficient(baremeEntries[0].regionFactor, department ?? undefined)
+      : 1.0;
+
+    const sraContext = {
+      baremeEntries: baremeEntries.length > 0 ? baremeEntries : undefined,
+      garageQuote: garageQuotes.length > 0 ? garageQuotes[0] : undefined,
+      regionalCoef,
+    };
+
+    const { result, tokensUsed, durationMs } = await estimateIndemnizationWithSRA(estimateData, sraContext);
 
     const analysis = await prisma.aIAnalysis.create({
       data: {

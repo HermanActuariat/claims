@@ -88,3 +88,30 @@ export const estimationUserPrompt = (claimData: Record<string, unknown>) =>
 ${JSON.stringify(claimData, null, 2)}
 
 Produis l'estimation d'indemnisation en appliquant les barèmes 2025-2026.`;
+
+export const estimationUserPromptWithSRA = (
+  claimData: Record<string, unknown>,
+  sraContext?: { baremeEntries?: unknown[]; garageQuote?: unknown; regionalCoef?: number }
+) => {
+  let prompt = `Donnees du sinistre a estimer :
+${JSON.stringify(claimData, null, 2)}`;
+
+  if (sraContext?.baremeEntries?.length) {
+    prompt += `\n\n## Bareme SRA interne (reference)
+${JSON.stringify(sraContext.baremeEntries, null, 2)}
+Utilise ces donnees comme reference principale pour les couts pieces et main-d'oeuvre.`;
+  }
+
+  if (sraContext?.garageQuote) {
+    prompt += `\n\n## Devis garage reel
+${JSON.stringify(sraContext.garageQuote, null, 2)}
+Ce devis garage est une donnee reelle — il doit ancrer ton estimation.`;
+  }
+
+  if (sraContext?.regionalCoef && sraContext.regionalCoef !== 1.0) {
+    prompt += `\n\nCoefficient regional applique : ${sraContext.regionalCoef} (zone geographique du sinistre).`;
+  }
+
+  prompt += `\n\nProduis l'estimation d'indemnisation en appliquant les baremes 2025-2026${sraContext?.baremeEntries?.length ? ' et les donnees SRA fournies' : ''}.`;
+  return prompt;
+};

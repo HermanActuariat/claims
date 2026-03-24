@@ -16,6 +16,7 @@ import {
 import {
   ESTIMATION_SYSTEM_PROMPT,
   estimationUserPrompt,
+  estimationUserPromptWithSRA,
 } from "@/lib/prompts/estimation";
 import {
   LETTER_SYSTEM_PROMPT,
@@ -78,6 +79,20 @@ export async function estimateIndemnization(
     maxTokens: 1024,
   });
 
+  const result = parseAIResponse<EstimationResult>(text);
+  return { result, tokensUsed, durationMs, provider };
+}
+
+// 3b. Enhanced Indemnization Estimation with SRA context
+export async function estimateIndemnizationWithSRA(
+  claimData: Record<string, unknown>,
+  sraContext?: { baremeEntries?: unknown[]; garageQuote?: unknown; regionalCoef?: number }
+): Promise<{ result: EstimationResult; tokensUsed: number; durationMs: number; provider?: string }> {
+  const { text, tokensUsed, durationMs, provider } = await callWithFallback({
+    systemPrompt: ESTIMATION_SYSTEM_PROMPT,
+    userPrompt: estimationUserPromptWithSRA(claimData, sraContext),
+    maxTokens: 1024,
+  });
   const result = parseAIResponse<EstimationResult>(text);
   return { result, tokensUsed, durationMs, provider };
 }

@@ -26,6 +26,12 @@ export const permissions = {
   // Audit logs
   canViewAuditLogs: (role: UserRole) => role === "MANAGER" || role === "ADMIN",
   canExportAuditLogs: (role: UserRole) => role === "ADMIN",
+
+  // SRA Baremes
+  canManageRepairReferences: (role: UserRole) => role === "MANAGER" || role === "ADMIN",
+  canViewRepairReferences: (_role?: UserRole) => true,
+  canViewGarageQuotes: (_role?: UserRole) => true,
+  canValidateGarageQuote: (role: UserRole) => role === "MANAGER" || role === "ADMIN",
 } as const;
 
 export function requireRole(
