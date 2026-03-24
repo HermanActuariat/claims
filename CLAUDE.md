@@ -58,7 +58,7 @@ claims/
 - Zod sur 100% des entrées API
 - Audit trail sur toutes les mutations
 - Numérotation sinistres : `CLM-YYYY-NNNNN`
-- Modèle IA : `claude-sonnet-4-6`
+- Modèle IA : multi-provider via `callWithFallback()` (Groq `llama-3.3-70b-versatile` par défaut, Anthropic `claude-sonnet-4-6` en fallback)
 
 ## Commandes utiles (dans claimflow/)
 
@@ -174,5 +174,6 @@ npx ts-node mcp/baremes-server.ts
 DATABASE_URL="file:./dev.db"
 NEXTAUTH_SECRET="claimflow-secret-change-in-production-2026"
 NEXTAUTH_URL="http://localhost:3000"
-ANTHROPIC_API_KEY="[CLE_API_ANTHROPIC]"
+GROQ_API_KEY="[CLE_API_GROQ]"            # Provider principal (requis)
+ANTHROPIC_API_KEY="[CLE_API_ANTHROPIC]"   # Provider fallback (optionnel)
 ```

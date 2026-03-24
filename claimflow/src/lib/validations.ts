@@ -209,3 +209,73 @@ export const FraudNetworkActionSchema = z.object({
 export const RecomputeSchema = z.object({
   scope: z.enum(["FULL", "INCREMENTAL"]).default("INCREMENTAL"),
 });
+
+// ─── OCR & Document Classification schemas ──────────────────────────────────
+
+export const OcrRequestSchema = z.object({
+  documentId: z.string().cuid("ID document invalide"),
+  imageBase64: z.string().min(1, "Image requise").optional(),
+});
+
+export const ClassifyDocumentSchema = z.object({
+  documentId: z.string().cuid("ID document invalide"),
+  filename: z.string().min(1).optional(),
+  mimeType: z.string().min(1).optional(),
+});
+
+export const ImportEconstatSchema = z.object({
+  claimId: z.string().cuid("ID sinistre invalide"),
+  data: z.string().min(1, "Données e-constat requises"),
+  format: z.enum(["XML", "JSON"]).default("JSON"),
+});
+
+// ─── Explainability & Contestation schemas ──────────────────────────────────
+
+export const CreateContestationSchema = z.object({
+  reason: z.string().min(10, "Le motif doit contenir au moins 10 caractères").max(2000),
+});
+
+export const ResolveContestationSchema = z.object({
+  status: z.enum(["ACCEPTED", "REJECTED"]),
+  resolution: z.string().min(10, "La résolution doit contenir au moins 10 caractères").max(2000),
+});
+
+// ─── Automation Rules schemas ───────────────────────────────────────────────
+
+const RuleConditionSchema = z.object({
+  field: z.string().min(1),
+  operator: z.enum(["eq", "neq", "gt", "gte", "lt", "lte", "contains", "in"]),
+  value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]),
+});
+
+export const CreateRuleSchema = z.object({
+  name: z.string().min(3, "Nom trop court (min 3 caractères)").max(100),
+  description: z.string().max(500).optional(),
+  active: z.boolean().default(true),
+  priority: z.number().int().min(0).max(100).default(0),
+  conditions: z.array(RuleConditionSchema).min(1, "Au moins une condition requise"),
+  action: z.enum(["AUTO_APPROVE", "ESCALATE_TO_MANAGER", "REQUEST_INFO", "FLAG_FRAUD"]),
+  actionParams: z.record(z.unknown()).optional(),
+});
+
+export const UpdateRuleSchema = CreateRuleSchema.partial();
+
+export const SimulateRuleSchema = z.object({
+  claimId: z.string().cuid("ID sinistre invalide"),
+});
+
+export const RuleExecutionLogQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).catch(1),
+  pageSize: z.coerce.number().int().min(1).max(100).catch(20),
+  ruleId: z.string().optional(),
+  claimId: z.string().optional(),
+});
+
+// ─── AI Provider schemas ────────────────────────────────────────────────────
+
+export const UpdateProviderConfigSchema = z.object({
+  active: z.boolean().optional(),
+  priority: z.number().int().min(0).max(100).optional(),
+  defaultModel: z.string().min(1).optional(),
+  maxTokens: z.number().int().min(1).max(32768).optional(),
+});

@@ -6,6 +6,7 @@ import { createAuditLog } from "@/lib/audit";
 import { isValidTransition } from "@/lib/claim-service";
 import { createNotification } from "@/lib/notification-service";
 import { sendClaimStatusEmail } from "@/lib/email-service";
+import { executeRulesForClaim } from "@/lib/rules-engine";
 import { ClaimStatus, CLAIM_STATUS_LABELS } from "@/types";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -84,6 +85,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       policyholderName: `${updated.policyholder.firstName} ${updated.policyholder.lastName}`,
     });
   }
+
+  // Trigger automation rules after status change
+  await executeRulesForClaim(id, session.user.id).catch((err) => {
+    console.error(`[claims/${id}/status] Rules engine failed after status change:`, err);
+  });
 
   return NextResponse.json({ data: updated });
 }

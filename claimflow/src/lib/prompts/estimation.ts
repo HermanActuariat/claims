@@ -1,7 +1,7 @@
 /**
  * Prompt système — Estimation d'indemnisation
  * Agent : IA Engineer / estimateIndemnization()
- * Modèle : claude-sonnet-4-6
+ * Modèle : déterminé par le provider actif (via callWithFallback)
  */
 
 export const BAREMES_2025_2026 = `## Barèmes d'indemnisation de référence — France 2025-2026
@@ -68,7 +68,12 @@ Réponds UNIQUEMENT en JSON valide :
   "netEstimate": 0,
   "totalLoss": false,
   "confidence": "low | medium | high",
-  "methodology": "explication courte de la méthode de calcul"
+  "methodology": "explication courte de la méthode de calcul",
+  "explainability": {
+    "methodology": "detailed estimation methodology",
+    "limitations": ["list of estimation limitations"],
+    "dataSourcesUsed": ["list of data sources consulted"]
+  }
 }
 \`\`\`
 
