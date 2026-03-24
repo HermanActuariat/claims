@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AIAnalysisPanel } from "@/components/claims/AIAnalysisPanel";
+import { GarageQuotePanel } from "@/components/claims/GarageQuotePanel";
 import { ClaimTimeline } from "@/components/claims/ClaimTimeline";
 import { RiskScoreWidget } from "@/components/risk/RiskScoreWidget";
 import { RiskScoreHistory } from "@/components/risk/RiskScoreHistory";
@@ -515,6 +516,14 @@ export default function ClaimDetailPage({ params }: { params: Promise<{ id: stri
             <GlassCard className="overflow-hidden">
               <div className="p-6">
                 <AIAnalysisPanel claimId={id} policyholderEmail={claim.policyholder.email} onAnalysisComplete={fetchClaim} />
+              </div>
+            </GlassCard>
+
+            {/* Devis garage */}
+            <GlassCard>
+              <SectionHeader icon={FileText} title="Devis garage" />
+              <div className="p-6">
+                <GarageQuotePanel claimId={id} userRole={session?.user?.role ?? ""} />
               </div>
             </GlassCard>
 

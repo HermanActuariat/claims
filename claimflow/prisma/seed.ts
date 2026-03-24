@@ -339,6 +339,40 @@ async function main() {
   });
   console.log("AI Provider configs seeded");
 
+  // ─── SRA Repair References ──────────────────────────────────────────────────
+  const regionFactor = JSON.stringify({ "75": 1.15, "69": 1.05, "13": 1.08, "31": 1.02, "default": 1.0 });
+  const sraRefs = [
+    { category: "BODY", subcategory: "Pare-chocs avant", vehicleSegment: "CITY", avgPartCost: 300, avgLaborHours: 3, avgLaborRate: 55 },
+    { category: "BODY", subcategory: "Pare-chocs avant", vehicleSegment: "SEDAN", avgPartCost: 500, avgLaborHours: 4, avgLaborRate: 60 },
+    { category: "BODY", subcategory: "Aile avant", vehicleSegment: "SUV", avgPartCost: 700, avgLaborHours: 4.5, avgLaborRate: 65 },
+    { category: "BODY", subcategory: "Capot + aile", vehicleSegment: "PREMIUM", avgPartCost: 1200, avgLaborHours: 5, avgLaborRate: 80 },
+    { category: "MECHANICS", subcategory: "Suspension avant", vehicleSegment: "CITY", avgPartCost: 200, avgLaborHours: 2, avgLaborRate: 55 },
+    { category: "MECHANICS", subcategory: "Suspension avant", vehicleSegment: "SEDAN", avgPartCost: 400, avgLaborHours: 3, avgLaborRate: 60 },
+    { category: "GLASS", subcategory: "Pare-brise", vehicleSegment: "CITY", avgPartCost: 250, avgLaborHours: 1, avgLaborRate: 50 },
+    { category: "GLASS", subcategory: "Pare-brise", vehicleSegment: "SEDAN", avgPartCost: 400, avgLaborHours: 1.5, avgLaborRate: 55 },
+    { category: "PAINT", subcategory: "Peinture carrosserie", vehicleSegment: "CITY", avgPartCost: 100, avgLaborHours: 4, avgLaborRate: 45 },
+    { category: "PAINT", subcategory: "Peinture carrosserie", vehicleSegment: "SEDAN", avgPartCost: 150, avgLaborHours: 5, avgLaborRate: 50 },
+    { category: "ELECTRICAL", subcategory: "Faisceau électrique", vehicleSegment: "SEDAN", avgPartCost: 300, avgLaborHours: 2.5, avgLaborRate: 65 },
+  ];
+
+  for (const ref of sraRefs) {
+    const existing = await prisma.repairReference.findFirst({
+      where: { category: ref.category, subcategory: ref.subcategory, vehicleSegment: ref.vehicleSegment },
+    });
+    if (!existing) {
+      await prisma.repairReference.create({
+        data: {
+          ...ref,
+          source: "SRA_OBSERVATOIRE",
+          regionFactor,
+          validFrom: new Date("2025-01-01"),
+          updatedById: admin.id,
+        },
+      });
+    }
+  }
+  console.log("SRA Repair References seeded:", sraRefs.length);
+
   console.log("Seeding complete!");
 }
 

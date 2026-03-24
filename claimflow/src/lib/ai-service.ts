@@ -70,11 +70,12 @@ export async function analyzeFraud(
 
 // 3. Indemnization Estimation
 export async function estimateIndemnization(
-  claimData: Record<string, unknown>
+  claimData: Record<string, unknown>,
+  sraContext?: { baremeData?: string; garageQuoteData?: string }
 ): Promise<{ result: EstimationResult; tokensUsed: number; durationMs: number; provider?: string }> {
   const { text, tokensUsed, durationMs, provider } = await callWithFallback({
     systemPrompt: ESTIMATION_SYSTEM_PROMPT,
-    userPrompt: estimationUserPrompt(claimData),
+    userPrompt: estimationUserPrompt(claimData, sraContext),
     maxTokens: 1024,
   });
 
