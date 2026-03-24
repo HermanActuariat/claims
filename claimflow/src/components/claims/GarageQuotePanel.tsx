@@ -45,18 +45,23 @@ export function GarageQuotePanel({ claimId, userRole }: GarageQuotePanelProps) {
   const [uploading, setUploading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [validating, setValidating] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const canValidate = ["MANAGER", "ADMIN"].includes(userRole);
 
   const fetchQuotes = useCallback(async () => {
     try {
+      setError(null);
       const res = await fetch(`/api/claims/${claimId}/garage-quotes`);
       if (res.ok) {
         const json = (await res.json()) as { data: Quote[] };
         setQuotes(json.data);
+      } else {
+        setError("Impossible de charger les devis garage");
       }
     } catch (err) {
       console.error("Failed to fetch garage quotes:", err);
+      setError("Erreur réseau lors du chargement des devis");
     } finally {
       setLoading(false);
     }
@@ -73,10 +78,14 @@ export function GarageQuotePanel({ claimId, userRole }: GarageQuotePanelProps) {
     try {
       const res = await fetch(`/api/claims/${claimId}/garage-quotes`, { method: "POST", body: fd });
       if (res.ok) {
+        setError(null);
         await fetchQuotes();
+      } else {
+        setError("Échec de l'upload du devis");
       }
     } catch (err) {
       console.error("Upload failed:", err);
+      setError("Erreur réseau lors de l'upload");
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -91,9 +100,11 @@ export function GarageQuotePanel({ claimId, userRole }: GarageQuotePanelProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ validated }),
       });
+      setError(null);
       await fetchQuotes();
     } catch (err) {
       console.error("Validation failed:", err);
+      setError("Erreur lors de la validation du devis");
     } finally {
       setValidating(null);
     }
@@ -128,7 +139,12 @@ export function GarageQuotePanel({ claimId, userRole }: GarageQuotePanelProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {quotes.length === 0 ? (
+        {error && (
+          <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+        {quotes.length === 0 && !error ? (
           <p className="text-sm text-slate-400 text-center py-4">Aucun devis garage importé</p>
         ) : (
           quotes.map((quote) => (

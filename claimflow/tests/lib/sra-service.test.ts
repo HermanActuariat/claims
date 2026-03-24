@@ -23,8 +23,46 @@ import {
   getRegionCoefficient,
   mapVehicleToSegment,
   computeBaremeEstimation,
+  safeParseRegionFactor,
+  extractGarageQuoteLines,
 } from "@/lib/sra-service";
 import { prisma } from "@/lib/prisma";
+import { callWithFallback } from "@/lib/ai-provider";
+import { parseAIResponse } from "@/lib/ai-utils";
+
+// ─── safeParseRegionFactor ───────────────────────────────────────────────────
+
+describe("safeParseRegionFactor", () => {
+  it("returns null for null input", () => {
+    expect(safeParseRegionFactor("ref-1", null)).toBeNull();
+  });
+
+  it("parses valid JSON object", () => {
+    const result = safeParseRegionFactor("ref-1", '{"75": 1.15, "default": 1.0}');
+    expect(result).toEqual({ "75": 1.15, "default": 1.0 });
+  });
+
+  it("returns null for malformed JSON", () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = safeParseRegionFactor("ref-1", "{invalid json}");
+    expect(result).toBeNull();
+    consoleSpy.mockRestore();
+  });
+
+  it("returns null for non-object JSON (array)", () => {
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const result = safeParseRegionFactor("ref-1", "[1, 2, 3]");
+    expect(result).toBeNull();
+    consoleSpy.mockRestore();
+  });
+
+  it("returns null for non-object JSON (string)", () => {
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const result = safeParseRegionFactor("ref-1", '"just a string"');
+    expect(result).toBeNull();
+    consoleSpy.mockRestore();
+  });
+});
 
 // ─── getRegionCoefficient ────────────────────────────────────────────────────
 
@@ -210,5 +248,77 @@ describe("computeBaremeEstimation", () => {
     expect(result.garageQuoteTotal).toBe(800);
     expect(result.garageName).toBe("Garage Test");
     expect(result.baremeEstimate).not.toBeNull();
+  });
+
+  it("handles malformed regionFactor gracefully", async () => {
+    vi.mocked(prisma.claim.findUnique).mockResolvedValue({
+      id: "claim-1",
+      policyholder: { vehicleMake: "Peugeot", vehicleModel: "308", vehicleYear: 2021 },
+      garageQuotes: [],
+    } as never);
+
+    vi.mocked(prisma.repairReference.findMany).mockResolvedValue([
+      {
+        id: "ref-1",
+        category: "BODY",
+        subcategory: "Pare-chocs",
+        vehicleSegment: "SEDAN",
+        avgPartCost: 500,
+        avgLaborHours: 4,
+        avgLaborRate: 60,
+        source: "SRA_OBSERVATOIRE",
+        regionFactor: "{invalid-json",
+        validFrom: new Date("2025-01-01"),
+        validUntil: null,
+      },
+    ] as never);
+
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = await computeBaremeEstimation("claim-1", "75");
+    // Malformed JSON should not crash — falls back to coefficient 1.0
+    expect(result.baremeEstimate).not.toBeNull();
+    expect(result.regionCoefficient).toBe(1.0);
+    consoleSpy.mockRestore();
+  });
+});
+
+// ─── extractGarageQuoteLines ────────────────────────────────────────────────
+
+describe("extractGarageQuoteLines", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns parsed array from AI response", async () => {
+    const mockLines = [
+      { lineType: "PART", description: "Pare-chocs", partReference: "PC-001", quantity: 1, unitPriceHT: 500, laborHours: null, laborRateHT: null, totalHT: 500, confidence: 0.9 },
+    ];
+    vi.mocked(callWithFallback).mockResolvedValue({
+      text: JSON.stringify(mockLines),
+      tokensUsed: 100,
+      durationMs: 500,
+      provider: "groq",
+      model: "llama-3.3-70b-versatile",
+    });
+    vi.mocked(parseAIResponse).mockReturnValue(mockLines);
+
+    const { result, tokensUsed } = await extractGarageQuoteLines("some document text");
+    expect(result).toHaveLength(1);
+    expect(result[0].lineType).toBe("PART");
+    expect(tokensUsed).toBe(100);
+  });
+
+  it("returns empty array when AI response is not an array", async () => {
+    vi.mocked(callWithFallback).mockResolvedValue({
+      text: '{"error": "could not parse"}',
+      tokensUsed: 50,
+      durationMs: 300,
+      provider: "groq",
+      model: "llama-3.3-70b-versatile",
+    });
+    vi.mocked(parseAIResponse).mockReturnValue({ error: "could not parse" });
+
+    const { result } = await extractGarageQuoteLines("some document text");
+    expect(result).toEqual([]);
   });
 });

@@ -61,7 +61,7 @@ export async function PATCH(
   } catch (err) {
     console.error("[admin/repair-references/PATCH]", err);
     return NextResponse.json(
-      { error: "Erreur lors de la mise à jour", details: String(err) },
+      { error: "Erreur lors de la mise à jour" },
       { status: 500 }
     );
   }

@@ -5,6 +5,7 @@ import { createAuditLog } from "@/lib/audit";
 import { extractGarageQuoteLines } from "@/lib/sra-service";
 import { writeFile, mkdir, readFile } from "fs/promises";
 import path from "path";
+import { randomUUID } from "crypto";
 
 const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
@@ -83,7 +84,8 @@ export async function POST(
   // Save file to disk
   const uploadDir = path.join(process.cwd(), "uploads", id);
   await mkdir(uploadDir, { recursive: true });
-  const filename = `${Date.now()}-${file.name}`;
+  const ext = path.extname(file.name).replace(/[^.a-zA-Z0-9]/g, "");
+  const filename = `${Date.now()}-${randomUUID()}${ext}`;
   const filepath = path.join(uploadDir, filename);
   const bytes = await file.arrayBuffer();
   await writeFile(filepath, Buffer.from(bytes));
@@ -105,12 +107,12 @@ export async function POST(
   let extractedByAI = false;
 
   try {
-    // Read file content as base64 for AI extraction
+    // Read file content for AI extraction (up to ~375KB of actual data)
     const fileBuffer = await readFile(filepath);
     const base64Content = fileBuffer.toString("base64");
     const documentText = file.type === "application/pdf"
-      ? `[Document PDF encodé en base64 — nom: ${file.name}]\n${base64Content.substring(0, 5000)}`
-      : `[Image encodée en base64 — nom: ${file.name}]\n${base64Content.substring(0, 5000)}`;
+      ? `[Document PDF encodé en base64 — nom: ${file.name}]\n${base64Content.substring(0, 500000)}`
+      : `[Image encodée en base64 — nom: ${file.name}]\n${base64Content.substring(0, 500000)}`;
 
     const { result } = await extractGarageQuoteLines(documentText);
     extractedLines = result.map((l) => ({
@@ -133,69 +135,78 @@ export async function POST(
   const totalAmount = extractedLines.reduce((sum, l) => sum + l.totalHT, 0) || null;
 
   // Create quote + lines in transaction
-  const quote = await prisma.$transaction(async (tx) => {
-    const q = await tx.garageQuote.create({
-      data: {
-        claimId: id,
-        documentId: document.id,
-        garageName,
-        garageCity,
-        totalAmount,
-        extractedByAI,
-      },
+  try {
+    const quote = await prisma.$transaction(async (tx) => {
+      const q = await tx.garageQuote.create({
+        data: {
+          claimId: id,
+          documentId: document.id,
+          garageName,
+          garageCity,
+          totalAmount,
+          extractedByAI,
+        },
+      });
+
+      if (extractedLines.length > 0) {
+        await tx.garageQuoteLine.createMany({
+          data: extractedLines.map((l) => ({
+            quoteId: q.id,
+            ...l,
+          })),
+        });
+      }
+
+      return tx.garageQuote.findUnique({
+        where: { id: q.id },
+        include: { lines: true },
+      });
     });
 
-    if (extractedLines.length > 0) {
-      await tx.garageQuoteLine.createMany({
-        data: extractedLines.map((l) => ({
-          quoteId: q.id,
-          ...l,
-        })),
-      });
+    if (!quote) {
+      return NextResponse.json({ error: "Erreur lors de la création du devis" }, { status: 500 });
     }
 
-    return tx.garageQuote.findUnique({
-      where: { id: q.id },
-      include: { lines: true },
+    await createAuditLog({
+      action: "GARAGE_QUOTE_UPLOADED",
+      entityType: "GARAGE_QUOTE",
+      entityId: quote.id,
+      after: { garageName, totalAmount, linesCount: extractedLines.length },
+      claimId: id,
+      userId: session.user.id,
     });
-  });
 
-  await createAuditLog({
-    action: "GARAGE_QUOTE_UPLOADED",
-    entityType: "GARAGE_QUOTE",
-    entityId: quote!.id,
-    after: { garageName, totalAmount, linesCount: extractedLines.length },
-    claimId: id,
-    userId: session.user.id,
-  });
-
-  return NextResponse.json(
-    {
-      data: {
-        id: quote!.id,
-        claimId: id,
-        documentId: document.id,
-        garageName: quote!.garageName,
-        garageCity: quote!.garageCity,
-        totalAmount: quote!.totalAmount,
-        extractedByAI: quote!.extractedByAI,
-        validatedById: null,
-        validatedAt: null,
-        createdAt: quote!.createdAt.toISOString(),
-        lines: quote!.lines.map((l) => ({
-          id: l.id,
-          lineType: l.lineType,
-          description: l.description,
-          partReference: l.partReference,
-          quantity: l.quantity,
-          unitPriceHT: l.unitPriceHT,
-          laborHours: l.laborHours,
-          laborRateHT: l.laborRateHT,
-          totalHT: l.totalHT,
-          confidence: l.confidence,
-        })),
+    return NextResponse.json(
+      {
+        data: {
+          id: quote.id,
+          claimId: id,
+          documentId: document.id,
+          garageName: quote.garageName,
+          garageCity: quote.garageCity,
+          totalAmount: quote.totalAmount,
+          extractedByAI: quote.extractedByAI,
+          validatedById: null,
+          validatedAt: null,
+          createdAt: quote.createdAt.toISOString(),
+          lines: quote.lines.map((l) => ({
+            id: l.id,
+            lineType: l.lineType,
+            description: l.description,
+            partReference: l.partReference,
+            quantity: l.quantity,
+            unitPriceHT: l.unitPriceHT,
+            laborHours: l.laborHours,
+            laborRateHT: l.laborRateHT,
+            totalHT: l.totalHT,
+            confidence: l.confidence,
+          })),
+        },
       },
-    },
-    { status: 201 }
-  );
+      { status: 201 }
+    );
+  } catch (err) {
+    console.error("[garage-quotes/POST] Transaction failed:", err);
+    return NextResponse.json({ error: "Erreur lors de la création du devis" }, { status: 500 });
+  }
 }

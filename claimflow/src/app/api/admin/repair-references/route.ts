@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[admin/repair-references/POST]", err);
     return NextResponse.json(
-      { error: "Erreur lors de la création", details: String(err) },
+      { error: "Erreur lors de la création" },
       { status: 500 }
     );
   }

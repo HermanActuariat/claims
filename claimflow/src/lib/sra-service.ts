@@ -31,6 +31,23 @@ export function mapVehicleToSegment(make: string, model: string, _year: number):
   return "SEDAN";
 }
 
+// ─── Safe JSON Parsing ──────────────────────────────────────────────────────
+
+export function safeParseRegionFactor(refId: string, raw: string | null): Record<string, number> | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+      return parsed as Record<string, number>;
+    }
+    console.warn(`[sra-service] regionFactor for ref ${refId} is not an object`);
+    return null;
+  } catch (err) {
+    console.error(`[sra-service] Failed to parse regionFactor for ref ${refId}:`, err);
+    return null;
+  }
+}
+
 // ─── Region Coefficient ─────────────────────────────────────────────────────
 
 export function getRegionCoefficient(
@@ -99,7 +116,7 @@ export async function computeBaremeEstimation(
   for (const ref of refs) {
     const regionCoeff = department
       ? getRegionCoefficient(
-          ref.regionFactor ? (JSON.parse(ref.regionFactor) as Record<string, number>) : null,
+          safeParseRegionFactor(ref.id, ref.regionFactor),
           department
         )
       : 1.0;
@@ -127,7 +144,7 @@ export async function computeBaremeEstimation(
     garageName,
     regionCoefficient: department
       ? getRegionCoefficient(
-          refs[0]?.regionFactor ? (JSON.parse(refs[0].regionFactor) as Record<string, number>) : null,
+          safeParseRegionFactor(refs[0]?.id ?? "unknown", refs[0]?.regionFactor ?? null),
           department
         )
       : 1.0,

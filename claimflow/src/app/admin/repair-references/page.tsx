@@ -65,16 +65,25 @@ export default function RepairReferencesPage() {
 
   const fetchRefs = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (filterCategory) params.set("category", filterCategory);
-    if (filterSegment) params.set("vehicleSegment", filterSegment);
-    params.set("pageSize", "100");
-    const res = await fetch(`/api/admin/repair-references?${params}`);
-    if (res.ok) {
-      const json = (await res.json()) as { data: RepairReferenceItem[] };
-      setRefs(json.data);
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      if (filterCategory) params.set("category", filterCategory);
+      if (filterSegment) params.set("vehicleSegment", filterSegment);
+      params.set("pageSize", "100");
+      const res = await fetch(`/api/admin/repair-references?${params}`);
+      if (res.ok) {
+        const json = (await res.json()) as { data: RepairReferenceItem[] };
+        setRefs(json.data);
+      } else {
+        setError("Impossible de charger les barèmes de réparation");
+      }
+    } catch (err) {
+      console.error("Failed to fetch repair references:", err);
+      setError("Erreur réseau lors du chargement des barèmes");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [filterCategory, filterSegment]);
 
   useEffect(() => {
