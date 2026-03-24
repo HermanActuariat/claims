@@ -27,18 +27,21 @@ interface AnalysisResults {
 export function AIAnalysisPanel({ claimId, policyholderEmail, onAnalysisComplete }: AIAnalysisPanelProps) {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<AnalysisResults | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [showExtraction, setShowExtraction] = useState(false);
 
   const runAnalysis = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch(`/api/claims/${claimId}/analyze`, { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || "Erreur analyse IA");
       setResults(data.data.results);
       onAnalysisComplete?.();
-    } catch (error) {
-      console.error("Analysis failed:", error);
+    } catch (err) {
+      console.error("Analysis failed:", err);
+      setError(err instanceof Error ? err.message : "Erreur inconnue lors de l'analyse");
     } finally {
       setLoading(false);
     }
@@ -70,6 +73,14 @@ export function AIAnalysisPanel({ claimId, policyholderEmail, onAnalysisComplete
           )}
         </Button>
       </div>
+
+      {/* Error */}
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
 
       {/* Results */}
       {results && (

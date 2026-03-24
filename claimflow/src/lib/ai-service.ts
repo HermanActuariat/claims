@@ -53,8 +53,8 @@ export async function analyzeFraud(
       const { networkScore, networkRisk } = await getNetworkScoreForClaim(claimId);
       enrichedClaimData.networkScore = networkScore;
       enrichedClaimData.networkRisk = networkRisk;
-    } catch {
-      // Non-blocking: if network score lookup fails, proceed without it
+    } catch (err) {
+      console.warn("Non-blocking: network score lookup failed for claim", claimId, err);
     }
   }
 

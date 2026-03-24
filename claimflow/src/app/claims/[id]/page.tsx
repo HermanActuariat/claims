@@ -87,6 +87,7 @@ export default function ClaimDetailPage({ params }: { params: Promise<{ id: stri
 
   const [handlers, setHandlers] = useState<{ id: string; name: string; email: string; active: boolean }[]>([]);
   const [assigning, setAssigning] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
 
   const fetchClaim = async () => {
     try {
@@ -114,32 +115,53 @@ export default function ClaimDetailPage({ params }: { params: Promise<{ id: stri
     if (session?.user?.role === "MANAGER" || session?.user?.role === "ADMIN") {
       fetch("/api/admin/users?role=HANDLER&active=true&pageSize=100")
         .then((r) => r.json())
-        .then((d: { data: typeof handlers }) => setHandlers(d.data ?? []));
+        .then((d: { data: typeof handlers }) => setHandlers(d.data ?? []))
+        .catch((err) => console.error("Failed to fetch handlers:", err));
     }
   }, [session]);
 
   const updateStatus = async (newStatus: string) => {
     setStatusUpdating(true);
-    await fetch(`/api/claims/${id}/status`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
-    });
-    await fetchClaim();
-    setStatusUpdating(false);
+    setMutationError(null);
+    try {
+      const res = await fetch(`/api/claims/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error || `Erreur ${res.status}`);
+      }
+      await fetchClaim();
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : "Erreur lors du changement de statut");
+    } finally {
+      setStatusUpdating(false);
+    }
   };
 
   const addComment = async () => {
     if (!newComment.trim()) return;
     setAddingComment(true);
-    await fetch(`/api/claims/${id}/comments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: newComment, isInternal: true }),
-    });
-    setNewComment("");
-    await fetchClaim();
-    setAddingComment(false);
+    setMutationError(null);
+    try {
+      const res = await fetch(`/api/claims/${id}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: newComment, isInternal: true }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error || `Erreur ${res.status}`);
+      }
+      setNewComment("");
+      await fetchClaim();
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : "Erreur lors de l'ajout du commentaire");
+    } finally {
+      setAddingComment(false);
+    }
   };
 
   const uploadDocuments = async () => {
@@ -178,13 +200,23 @@ export default function ClaimDetailPage({ params }: { params: Promise<{ id: stri
   const reassign = async (userId: string) => {
     if (!userId) return;
     setAssigning(true);
-    await fetch(`/api/claims/${id}/assign`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId }),
-    });
-    setAssigning(false);
-    await fetchClaim();
+    setMutationError(null);
+    try {
+      const res = await fetch(`/api/claims/${id}/assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error || `Erreur ${res.status}`);
+      }
+      await fetchClaim();
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : "Erreur lors de la réassignation");
+    } finally {
+      setAssigning(false);
+    }
   };
 
   const openEdit = () => {
@@ -216,8 +248,19 @@ export default function ClaimDetailPage({ params }: { params: Promise<{ id: stri
 
   const handleDelete = async () => {
     setDeleteLoading(true);
-    await fetch(`/api/claims/${id}`, { method: "DELETE" });
-    router.push("/claims");
+    setMutationError(null);
+    try {
+      const res = await fetch(`/api/claims/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error || `Erreur ${res.status}`);
+      }
+      router.push("/claims");
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : "Erreur lors de la suppression");
+      setDeleteLoading(false);
+      setDeleteConfirm(false);
+    }
   };
 
   if (loading) {
@@ -397,6 +440,14 @@ export default function ClaimDetailPage({ params }: { params: Promise<{ id: stri
             )}
           </div>
         </div>
+
+        {mutationError && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            {mutationError}
+            <button onClick={() => setMutationError(null)} className="ml-auto"><X className="h-4 w-4" /></button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main — 2 cols */}
