@@ -397,6 +397,11 @@ export interface FraudAnalysisResult {
   factors: FraudFactor[];
   summary: string;
   recommendation: string;
+  explainability?: {
+    methodology: string;
+    limitations: string[];
+    dataSourcesUsed: string[];
+  };
 }
 
 export interface FraudFactor {

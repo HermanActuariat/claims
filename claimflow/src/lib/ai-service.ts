@@ -60,7 +60,7 @@ export async function analyzeFraud(
   const { text, tokensUsed, durationMs, provider } = await callWithFallback({
     systemPrompt: FRAUD_SYSTEM_PROMPT,
     userPrompt: fraudUserPrompt(enrichedClaimData),
-    maxTokens: 1024,
+    maxTokens: 2048,
   });
 
   const result = parseAIResponse<FraudAnalysisResult>(text);
