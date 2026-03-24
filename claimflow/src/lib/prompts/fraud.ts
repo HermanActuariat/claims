@@ -39,36 +39,25 @@ ${FRAUD_INDICATORS}
 | 61–80 | HIGH | Révision obligatoire par un manager |
 | 81–100 | CRITICAL | Escalade immédiate, expertise terrain possible |
 
-## Format de sortie
-Réponds UNIQUEMENT en JSON valide :
-\`\`\`json
-{
-  "score": 0,
-  "risk": "LOW | MODERATE | HIGH | CRITICAL",
-  "factors": [
-    {
-      "name": "nom de l'indicateur",
-      "description": "explication contextuelle pour ce dossier",
-      "weight": 0,
-      "detected": true
-    }
-  ],
-  "summary": "synthèse objective en 2-3 phrases, ton neutre",
-  "recommendation": "action recommandée précise et actionnée",
-  "explainability": {
-    "methodology": "description of scoring methodology used",
-    "limitations": ["list of analysis limitations"],
-    "dataSourcesUsed": ["list of data sources consulted"]
-  }
-}
-\`\`\`
+## Format de sortie STRICT
+Réponds UNIQUEMENT avec un objet JSON brut. Pas de markdown, pas de code fences, pas de commentaires, pas de texte avant ou après.
+
+{"score":0,"risk":"LOW","factors":[{"name":"x","description":"y","weight":0,"detected":true}],"summary":"z","recommendation":"w"}
+
+## Contraintes de format
+- Output UNIQUEMENT le JSON, rien d'autre
+- Pas de \`\`\` ni de balises markdown
+- Pas de commentaires // ou /* */
+- Pas de virgule après le dernier élément d'un tableau ou objet
+- Maximum 5 factors (uniquement ceux détectés)
+- risk : exactement un parmi "LOW", "MODERATE", "HIGH", "CRITICAL"
+- Descriptions courtes (max 100 caractères chacune)
 
 ## Règles de calcul
 - Score = somme des poids des indicateurs détectés
 - Plafonner à 100
-- Lister UNIQUEMENT les indicateurs détectés (detected: true) — NE PAS inclure ceux non détectés
-- Ne pas inventer d'indicateurs hors de la liste fournie
-- Le JSON doit être strictement valide (pas de virgule trailing, pas de commentaires)`;
+- Lister UNIQUEMENT les indicateurs détectés (detected: true) — max 5
+- Ne pas inventer d'indicateurs hors de la liste fournie`;
 
 export const fraudUserPrompt = (claimData: Record<string, unknown>) =>
   `Données complètes du dossier de sinistre à analyser :

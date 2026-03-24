@@ -66,7 +66,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       documentCount: claim.documents.length,
     };
 
-    const { result: fraud, tokensUsed, durationMs } = await analyzeFraud(claimData);
+    let fraudResult: { result: Awaited<ReturnType<typeof analyzeFraud>>["result"]; tokensUsed: number; durationMs: number };
+    try {
+      fraudResult = await analyzeFraud(claimData);
+    } catch {
+      // Retry once with reduced maxTokens to get shorter, more parseable output
+      fraudResult = await analyzeFraud(claimData, undefined, { maxTokens: 1024 });
+    }
+    const { result: fraud, tokensUsed, durationMs } = fraudResult;
 
     await prisma.aIAnalysis.create({
       data: {

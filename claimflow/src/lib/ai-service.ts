@@ -43,7 +43,8 @@ export async function extractClaimInfo(
 // 2. Fraud Scoring
 export async function analyzeFraud(
   claimData: Record<string, unknown>,
-  claimId?: string
+  claimId?: string,
+  options?: { maxTokens?: number }
 ): Promise<{ result: FraudAnalysisResult; tokensUsed: number; durationMs: number; provider?: string }> {
   // Inject network risk context if claimId is provided
   const enrichedClaimData = { ...claimData };
@@ -60,7 +61,7 @@ export async function analyzeFraud(
   const { text, tokensUsed, durationMs, provider } = await callWithFallback({
     systemPrompt: FRAUD_SYSTEM_PROMPT,
     userPrompt: fraudUserPrompt(enrichedClaimData),
-    maxTokens: 2048,
+    maxTokens: options?.maxTokens ?? 2048,
   });
 
   const result = parseAIResponse<FraudAnalysisResult>(text);
